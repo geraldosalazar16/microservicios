@@ -1,17 +1,17 @@
 const Aerospike = require('aerospike');
 
 const client = Aerospike.client({
-    hosts: [
-        { addr: "127.0.0.1", port: 3000 }
-    ],
-    log: {
-        level: Aerospike.log.INFO
-    },
-    policies: {
-      read: new Aerospike.ReadPolicy({
-        key: Aerospike.policy.key.SEND
-      })
-    }
+  hosts: [
+    { addr: "127.0.0.1", port: 3000 }
+  ],
+  log: {
+    level: Aerospike.log.INFO
+  },
+  policies: {
+    read: new Aerospike.ReadPolicy({
+      key: Aerospike.policy.key.SEND
+    })
+  }
 });
 
 /**

@@ -1,3 +1,9 @@
 Database
-namespace: test
+namespace: test // Set a config variable
 set: clients
+
+Tokens
+used = false by default
+revoked = false by default
+returned object without key
+expires is in seconds

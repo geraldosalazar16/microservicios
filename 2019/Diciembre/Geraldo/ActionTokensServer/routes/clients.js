@@ -7,7 +7,7 @@ const hashSha512 = require('../helpers/hash');
 const makeDb = require('../database');
 const validateBody = require('../validators/body');
 const scanner = require('../helpers/scan');
-
+const filterScan = require('../helpers/filterScan');
 /**
  * Creates a Client and stores it in clients table.
  */
@@ -77,19 +77,18 @@ router.post('/delete', async (req, res) => {
                         const key = new Aerospike.Key('test', 'clients', clientInfo.clientId);
 
                         const result = await aerospikeClient.remove(key);
-                        console.log(result);
                         res.status(201).send({
                             status: 'success',
                             message: 'Client removed succesfully'
                         });
                     } else if (clientInfo.clientName) {
-                        const query = aerospikeClient.query('test', 'clients');
-                        query.where(Aerospike.filter.equal('name', clientInfo.clientName));
-                        const results = await scanner(query);
-                        const client = results.records[0];
-                        if (client) {
-                            const result = await aerospikeClient.remove(client.key);
-                            console.log(result);
+                        const scan = aerospikeClient.scan('test', 'clients')
+                        scan.concurrent = true
+                        scan.nobins = false
+                        const result = await filterScan(scan, {field: 'name', value: clientInfo.clientName});
+                        if (result.status === 'success') {
+                            const key = new Aerospike.Key('test', 'clients', result.record.clientId);
+                            await aerospikeClient.remove(key);
                             res.status(201).send({
                                 status: 'success',
                                 message: 'Client removed succesfully'
@@ -153,11 +152,18 @@ router.post('/block', async (req, res) => {
                     if (clientInfo.clientId) {                        
                         key = new Aerospike.Key('test', 'clients', clientInfo.clientId);                      
                     } else if (clientInfo.clientName) {
-                        const query = aerospikeClient.query('test', 'clients');
-                        query.where(Aerospike.filter.equal('name', clientInfo.clientName));
-                        const results = await aerospikeClient.info(query);
-                        const client = results.records[0];
-                        key = client.key;
+                        const scan = aerospikeClient.scan('test', 'clients')
+                        scan.concurrent = true
+                        scan.nobins = false
+                        const result = await filterScan(scan, {field: 'name', value: clientInfo.clientName});
+                        if (result.status === 'success') {
+                            key = result.record.clientId;
+                        } else {
+                            res.status(400).send({
+                                status: 'failed',
+                                message: 'The client does not exist in the database'
+                            });
+                        }
                     } else {
                         res.status(400).send({
                             status: 'failed',
@@ -165,11 +171,85 @@ router.post('/block', async (req, res) => {
                         });
                     }
                     if (key) {
-                        const result = await aerospikeClient.operate(key, ops);
+                        const aerospikeKey = new Aerospike.Key('test', 'clients', key);
+                        const result = await aerospikeClient.operate(aerospikeKey, ops);
 
                         res.status(201).send({
                             status: 'success',
                             message: 'Client blocked succesfully'
+                        });
+                    }                    
+                } catch (error) {
+                    res.status(400).send({
+                        status: 'failed',
+                        message: error.message
+                    });
+                }
+    
+            } else {
+                res.status(400).send({
+                    status: 'failed',
+                    message: 'Invalid credentials provided'
+                });
+            }
+    
+        } catch (e) {
+            res.status(500).send({
+                status: 'failed',
+                message: e.message,
+            });
+        }
+    }
+});
+
+/**
+ * Unblocks a client
+ */
+router.post('/unblock', async (req, res) => {
+    
+    const validationBody = validateBody(req.body);
+
+    if (validationBody.status === 'failed') {
+        res.status(400).send(validationBody);
+    } else {
+        try {
+            const clientInfo = validationBody.body;
+            if (validateCredentials(clientInfo)) {
+                try {
+                    const aerospikeClient = await makeDb();
+                    const op = Aerospike.operations;
+                    const ops = [
+                        op.write('active', 'true')
+                    ];
+                    let key;
+                    if (clientInfo.clientId) {                        
+                        key = new Aerospike.Key('test', 'clients', clientInfo.clientId);                      
+                    } else if (clientInfo.clientName) {
+                        const scan = aerospikeClient.scan('test', 'clients')
+                        scan.concurrent = true
+                        scan.nobins = false
+                        const result = await filterScan(scan, {field: 'name', value: clientInfo.clientName});
+                        if (result.status === 'success') {
+                            key = result.record.clientId;
+                        } else {
+                            res.status(400).send({
+                                status: 'failed',
+                                message: 'The client does not exist in the database'
+                            });
+                        }
+                    } else {
+                        res.status(400).send({
+                            status: 'failed',
+                            message: 'The client does not exist in the database'
+                        });
+                    }
+                    if (key) {
+                        const aerospikeKey = new Aerospike.Key('test', 'clients', key);
+                        const result = await aerospikeClient.operate(aerospikeKey, ops);
+
+                        res.status(201).send({
+                            status: 'success',
+                            message: 'Client unblocked succesfully'
                         });
                     }                    
                 } catch (error) {
@@ -248,54 +328,5 @@ router.post('/list', async (req, res) => {
         }
     }
 });
-
-/**
- * Blocks a client.
- */
-router.post('/block', async (req, res) => {
-    
-    const validationBody = validateBody(req.body);
-
-    if (validationBody.status === 'failed') {
-        res.status(400).send(validationBody);
-    } else {
-        try {
-            const clientInfo = validationBody.body;
-            if (validateCredentials(clientInfo)) {
-                try {
-                    const key = new Aerospike.Key('test', 'clients', clientInfo.clientId);
-                    const aerospikeClient = await makeDb();
-    
-                    const result = await aerospikeClient.remove(key);
-                    console.log(result);
-                    res.status(201).send({
-                        status: 'success',
-                        message: 'Client removed succesfully'
-                    });
-                } catch (error) {
-                    res.status(400).send({
-                        status: 'failed',
-                        message: error.message
-                    });
-                }
-    
-            } else {
-                res.status(400).send({
-                    status: 'failed',
-                    message: 'Invalid credentials provided'
-                });
-            }
-    
-        } catch (e) {
-            res.status(500).send({
-                status: 'failed',
-                message: e.message,
-            });
-        }
-    }
-});
-
-
-
 
 module.exports = router;
