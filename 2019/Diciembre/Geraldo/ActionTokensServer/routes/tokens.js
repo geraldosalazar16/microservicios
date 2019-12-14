@@ -7,6 +7,7 @@ const Aerospike = require('aerospike');
 const makeDb = require('../database');
 const { random, arrAlphabetic, arrAlphanumeric } = require('../helpers/random');
 const filterScan = require('../helpers/filterScan');
+const config = require('../config.json');
 
 /**
  * Creates a new standard Token.
@@ -19,10 +20,10 @@ router.post('/createStandard', async (req, res) => {
     } else {
         const tokenInfo = validationBody.body;
         const aerospikeClient = await makeDb();
-        const tokensScan = aerospikeClient.scan('test', 'tokens');
+        const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
-        const clientsScan = aerospikeClient.scan('test', 'clients');
+        const clientsScan = aerospikeClient.scan(config.aerospike.namespace, 'clients');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
         // Validate client credentials
@@ -47,7 +48,7 @@ router.post('/createStandard', async (req, res) => {
                     payload: tokenInfo.payload,
                     expire_at: currentDate
                 };
-                const aerospikeKey = new Aerospike.Key('test', 'tokens', uuidv4());
+                const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'tokens', uuidv4());
                 await aerospikeClient.put(aerospikeKey, finalToken);
                 res.status(200).send({
                     status: 'success',
@@ -80,10 +81,10 @@ router.post('/createNumeric', async (req, res) => {
     } else {
         const tokenInfo = validationBody.body;
         const aerospikeClient = await makeDb();
-        const tokensScan = aerospikeClient.scan('test', 'tokens');
+        const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
-        const clientsScan = aerospikeClient.scan('test', 'clients');
+        const clientsScan = aerospikeClient.scan(config.aerospike.namespace, 'clients');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
         // Validate client credentials
@@ -121,7 +122,7 @@ router.post('/createNumeric', async (req, res) => {
                     payload: tokenInfo.payload,
                     expire_at: currentDate
                 };
-                const aerospikeKey = new Aerospike.Key('test', 'tokens', uuidv4());
+                const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'tokens', uuidv4());
                 await aerospikeClient.put(aerospikeKey, finalToken);
                 res.status(200).send({
                     status: 'success',
@@ -149,10 +150,10 @@ router.post('/createAlphabetic', async (req, res) => {
     } else {
         const tokenInfo = validationBody.body;
         const aerospikeClient = await makeDb();
-        const tokensScan = aerospikeClient.scan('test', 'tokens');
+        const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
-        const clientsScan = aerospikeClient.scan('test', 'clients');
+        const clientsScan = aerospikeClient.scan(config.aerospike.namespace, 'clients');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
         // Validate client credentials
@@ -190,7 +191,7 @@ router.post('/createAlphabetic', async (req, res) => {
                     payload: tokenInfo.payload,
                     expire_at: currentDate
                 };
-                const aerospikeKey = new Aerospike.Key('test', 'tokens', uuidv4());
+                const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'tokens', uuidv4());
                 await aerospikeClient.put(aerospikeKey, finalToken);
                 res.status(200).send({
                     status: 'success',
@@ -218,10 +219,10 @@ router.post('/createAlphanumeric', async (req, res) => {
     } else {
         const tokenInfo = validationBody.body;
         const aerospikeClient = await makeDb();
-        const tokensScan = aerospikeClient.scan('test', 'tokens');
+        const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
-        const clientsScan = aerospikeClient.scan('test', 'clients');
+        const clientsScan = aerospikeClient.scan(config.aerospike.namespace, 'clients');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
         // Validate client credentials
@@ -259,7 +260,7 @@ router.post('/createAlphanumeric', async (req, res) => {
                     payload: tokenInfo.payload,
                     expire_at: currentDate
                 };
-                const aerospikeKey = new Aerospike.Key('test', 'tokens', uuidv4());
+                const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'tokens', uuidv4());
                 await aerospikeClient.put(aerospikeKey, finalToken);
                 res.status(200).send({
                     status: 'success',
@@ -289,7 +290,7 @@ router.post('/use', async (req, res) => {
         try {            
             // Get token_info row from tokens table using token parameter
             const aerospikeClient = await makeDb();
-            const tokensScan = aerospikeClient.scan('test', 'tokens');
+            const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
             tokensScan.concurrent = true;
             tokensScan.nobins = false;
             const result = await filterScan(tokensScan, { field: 'token', value: parseInt(receivedToken.token) });
@@ -340,7 +341,7 @@ router.post('/use', async (req, res) => {
                         payload: tokenRecord.payload,
                         expire_at: tokenRecord.expire_at
                     }
-                    const historyKey = new Aerospike.Key('test', 'usage_history', uuidv4());
+                    const historyKey = new Aerospike.Key(config.aerospike.namespace, 'usage_history', uuidv4());
                     await aerospikeClient.put(historyKey, history);
                     res.status(200).send({
                         status: 'success',

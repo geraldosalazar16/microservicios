@@ -1,8 +1,12 @@
 const Aerospike = require('aerospike');
+const config = require('../config.json');
 
 const client = Aerospike.client({
   hosts: [
-    { addr: "127.0.0.1", port: 3000 }
+    {
+      addr: config.aerospike.address,
+      port: config.aerospike.port 
+    }
   ],
   log: {
     level: Aerospike.log.INFO

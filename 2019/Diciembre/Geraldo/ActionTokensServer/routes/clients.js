@@ -8,6 +8,8 @@ const makeDb = require('../database');
 const validateBody = require('../validators/body');
 const scanner = require('../helpers/scan');
 const filterScan = require('../helpers/filterScan');
+const config = require('../config.json');
+
 /**
  * Creates a Client and stores it in clients table.
  */
@@ -22,7 +24,7 @@ router.post('/create', async (req, res) => {
             if (validateCredentials(clientInfo)) {
                 try {
                     const clientId = uuidv4();
-                    const key = new Aerospike.Key('test', 'clients', clientId);
+                    const key = new Aerospike.Key(config.aerospike.namespace, 'clients', clientId);
                     const currentDate = new Date().toString();
                     const clientSecret = hashSha512(clientInfo.name + currentDate);
                     Object.assign(clientInfo, { clientId, clientSecret, active: 'true' });
@@ -74,7 +76,7 @@ router.post('/delete', async (req, res) => {
                 try {
                     const aerospikeClient = await makeDb();
                     if (clientInfo.clientId) {
-                        const key = new Aerospike.Key('test', 'clients', clientInfo.clientId);
+                        const key = new Aerospike.Key(config.aerospike.namespace, 'clients', clientInfo.clientId);
 
                         const result = await aerospikeClient.remove(key);
                         res.status(201).send({
@@ -82,12 +84,12 @@ router.post('/delete', async (req, res) => {
                             message: 'Client removed succesfully'
                         });
                     } else if (clientInfo.clientName) {
-                        const scan = aerospikeClient.scan('test', 'clients')
+                        const scan = aerospikeClient.scan(config.aerospike.namespace, 'clients')
                         scan.concurrent = true
                         scan.nobins = false
                         const result = await filterScan(scan, {field: 'name', value: clientInfo.clientName});
                         if (result.status === 'success') {
-                            const key = new Aerospike.Key('test', 'clients', result.record.clientId);
+                            const key = new Aerospike.Key(config.aerospike.namespace, 'clients', result.record.clientId);
                             await aerospikeClient.remove(key);
                             res.status(201).send({
                                 status: 'success',
@@ -150,9 +152,9 @@ router.post('/block', async (req, res) => {
                     ];
                     let key;
                     if (clientInfo.clientId) {                        
-                        key = new Aerospike.Key('test', 'clients', clientInfo.clientId);                      
+                        key = new Aerospike.Key(config.aerospike.namespace, 'clients', clientInfo.clientId);                      
                     } else if (clientInfo.clientName) {
-                        const scan = aerospikeClient.scan('test', 'clients')
+                        const scan = aerospikeClient.scan(config.aerospike.namespace, 'clients')
                         scan.concurrent = true
                         scan.nobins = false
                         const result = await filterScan(scan, {field: 'name', value: clientInfo.clientName});
@@ -171,7 +173,7 @@ router.post('/block', async (req, res) => {
                         });
                     }
                     if (key) {
-                        const aerospikeKey = new Aerospike.Key('test', 'clients', key);
+                        const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'clients', key);
                         const result = await aerospikeClient.operate(aerospikeKey, ops);
 
                         res.status(201).send({
@@ -223,9 +225,9 @@ router.post('/unblock', async (req, res) => {
                     ];
                     let key;
                     if (clientInfo.clientId) {                        
-                        key = new Aerospike.Key('test', 'clients', clientInfo.clientId);                      
+                        key = new Aerospike.Key(config.aerospike.namespace, 'clients', clientInfo.clientId);                      
                     } else if (clientInfo.clientName) {
-                        const scan = aerospikeClient.scan('test', 'clients')
+                        const scan = aerospikeClient.scan(config.aerospike.namespace, 'clients')
                         scan.concurrent = true
                         scan.nobins = false
                         const result = await filterScan(scan, {field: 'name', value: clientInfo.clientName});
@@ -244,7 +246,7 @@ router.post('/unblock', async (req, res) => {
                         });
                     }
                     if (key) {
-                        const aerospikeKey = new Aerospike.Key('test', 'clients', key);
+                        const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'clients', key);
                         const result = await aerospikeClient.operate(aerospikeKey, ops);
 
                         res.status(201).send({
@@ -290,7 +292,7 @@ router.post('/list', async (req, res) => {
             if (validateCredentials(clientInfo)) {
                 try {
                     const aerospikeClient = await makeDb();
-                    const scan = aerospikeClient.scan('test', 'clients')
+                    const scan = aerospikeClient.scan(config.aerospike.namespace, 'clients')
                     scan.concurrent = true
                     scan.nobins = false
                     const result = await scanner(scan);
