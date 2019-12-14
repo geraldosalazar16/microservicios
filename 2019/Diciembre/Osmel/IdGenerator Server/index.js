@@ -32,6 +32,7 @@ app.get('/random/next', (req, res) => {
   }
 })
 
+const port = normalizePort(process.env.PORT || '8001');
 http.createServer(app).listen(8021, () => {
-  console.log('Server started at http://localhost:8001');
+  console.log(`Server started at http://localhost:${port}`);
 });
