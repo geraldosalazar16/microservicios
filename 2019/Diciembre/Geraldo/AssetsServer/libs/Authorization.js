@@ -53,39 +53,10 @@ class Authorization {
      * @param {Object} params 
      */
     authorize(appId, params) {
-        // read config
-        const config = require('./authorizationServer.json');
-        const data = JSON.stringify({
-            clientId: config.clientId,
-            clientSecret: config.clientSecret,
-            appId: appId,
-            params: params
-        })
-
-        const options = {
-            hostname: config.url,
-            path: '',
-            method: 'POST',
-            port: '3001',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': data.length
-            }
-        }
         return new Promise((resolve, reject) => {
-            const req = http.request(options, (res) => {
-                res.setEncoding('utf8');
-                res.on('data', (d) => {
-                  resolve(d);
-                })
-            });
-    
-            req.on('error', (e) => {
-                reject(e);
-            });
-    
-            req.write(data);
-            req.end();
+            resolve({
+                status: 'success'
+            })
         });
     }
 
