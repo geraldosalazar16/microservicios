@@ -1,9 +1,8 @@
-var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-const expressValidator = require('express-validator');
+// const expressValidator = require('express-validator');
 
 var deviceRouter = require('./routes/deviceRoute');
 
@@ -18,9 +17,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
-app.use(expressValidator());
+// app.use(expressValidator());
 
-app.use('/', indexRouter);
 app.use('/devices', deviceRouter);
 
 // catch 404 and forward to error handler

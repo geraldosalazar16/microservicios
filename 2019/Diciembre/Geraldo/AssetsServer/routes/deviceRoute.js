@@ -1,14 +1,29 @@
 var express = require('express');
 var router = express.Router();
-const deviceController = require('../controllers/deviceController');
+const { validateInvite, invite } = require('../controllers/deviceController');
+const { body, validationResult } = require('express-validator');
 
 /**
  * Request to invite some other device to this business.
  */
 router.post(
   '/invite',
-  deviceController.validateInvite('invite'),
-  deviceController.invite
+  [
+    body('user_id', `user_id cant't be undefined`).exists(),
+    body('bid', `bid cant't be undefined`).exists(),
+    body('title', `title cant't be undefined`).exists(),
+    body('desc', `desc cant't be undefined`).exists(),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(422).json({ errors: errors.array() });
+    } else {
+      const result = await invite(req.body);
+      const status = result.status === 'success' ? 200 : 400;
+      res.status(status).json(result);
+    }
+  }
 );
 
 /**
