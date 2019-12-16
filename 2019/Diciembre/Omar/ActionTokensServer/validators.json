@@ -1,0 +1,12 @@
+{
+  "validators": [
+    {
+      "title": "Test Validator",
+      "desc": "It's a tester validator designed for test purposes",
+      "id": "testervalidatorserver_test1",
+      "url": "http://validatorserver/tester/test1",
+      "readerId": "ABCD",
+      "readerSecret": "1234"
+    }
+  ]
+}
