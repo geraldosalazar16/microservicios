@@ -1,0 +1,17 @@
+config:
+    target: "http://localhost:8000"
+    phases:
+      - duration: 60
+        arrivalRate: 1
+scenarios:
+    - flow:
+        - loop:
+            - post:
+                url: "/device/invite"
+                json:
+                    user_id: 1
+                    bid: 1
+                    title: 1
+                    desc: 1
+          count: 100
+  

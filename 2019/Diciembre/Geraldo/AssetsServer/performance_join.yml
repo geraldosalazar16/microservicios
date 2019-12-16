@@ -1,0 +1,16 @@
+config:
+    target: "http://localhost:8000"
+    phases:
+      - duration: 60
+        arrivalRate: 1
+scenarios:
+    - flow:
+        - loop:
+            - post:
+                url: "/device/join"
+                json:
+                    dev_id: "{{$randomNumber(1,10000)}}"
+                    dev_serial: "{{$randomNumber(1,10000)}}"
+                    invitation_code: "{{$randomNumber(1,10000)}}"
+          count: 100
+  
