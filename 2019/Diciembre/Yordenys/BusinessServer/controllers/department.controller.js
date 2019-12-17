@@ -2,6 +2,7 @@ const business = require('../models/business.model');
 const Authorization = require('../Authorization/Authorization');
 const generateCode = require('../generateCode/generateCode');
 const department = require('../models/department.model');
+const kafkaSend = require('../kafka');
 
 /**
  * This API creates a department and stores it in department table
@@ -39,8 +40,9 @@ exports.create = async function(req, res) {
                 throw "departments with same unique name already exists";
             }
 
+            const dep_id = generateCode.getNextId();
             businessTemp.departments.push(new department({
-                dep_id: generateCode.getNextId(),
+                dep_id,
                 dep_name: req.query.dep_name,
                 dep_title: req.query.dep_title,
                 dep_desc: req.query.dep_desc,
@@ -58,6 +60,18 @@ exports.create = async function(req, res) {
                     });
                 } else {
                     console.log("update document success");
+                    // Publish event on Kafka
+                    const kafkaMessage = JSON.stringify({
+                        user_id: req.query.user_id,
+                        dep_id,
+                        dep_name: req.query.dep_name,
+                        dep_title: req.query.dep_title,
+                        dep_desc: req.query.dep_desc,
+                        bid: req.query.bid,
+                        created_at: new Date(),
+                        created_by: req.query.user_id
+                    });
+                    kafkaSend('business_department_created', kafkaMessage);
                     res.status(200).json({
                         status: "success",
                         message: "Is update business successfull"
@@ -79,7 +93,7 @@ exports.edit = async function(req, res) {
         find((depart) => {
             if (depart.dep_id == req.query.dep_id) {
                 depart.dep_name = req.query.name;
-                depart.dep_desc = req.query.decription;
+                depart.dep_desc = req.query.description;
             }
             return depart.dep_id == req.query.dep_id;
         });
@@ -94,6 +108,15 @@ exports.edit = async function(req, res) {
                 });
             } else {
                 console.log("update document success");
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: req.query.user_id,
+                    dep_id: req.query.dep_id,
+                    bid: req.query.bid,
+                    name: req.query.name,
+                    description: req.query.description
+                });
+                kafkaSend('business_department_updated', kafkaMessage);
                 res.status(200).json({
                     status: "success",
                     message: "Is update business successfull"
@@ -145,6 +168,13 @@ exports.delete = async function(req, res) {
                     message: "Is update business faild"
                 });
             } else {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: req.query.user_id,
+                    dep_id: req.query.dep_id,
+                    bid: req.query.bid
+                });
+                kafkaSend('business_department_updated', kafkaMessage);
                 res.status(200).json({
                     status: "success",
                     message: "Is update business successfull"

@@ -1,6 +1,7 @@
 const business = require('../models/business.model');
 const Authorization = require('../Authorization/Authorization');
 const generateCode = require('../generateCode/generateCode');
+const kafkaSend = require('../kafka');
 
 function ExistsCodeGenerate() {
     var Count_Code = 0;
@@ -44,10 +45,11 @@ exports.create = async function(req, res) {
             }
 
             var unique_code = await generateCode.getNextId(req.query.unique_name);
+            var bid = generateCode.getNextCode();
             // Store business in database
 
             const newbusiness = new business({
-                bid: await generateCode.getNextCode(),
+                bid,
                 created_at: new Date(),
                 created_by: req.query.user_id,
                 unique_name: req.query.unique_name,
@@ -58,6 +60,19 @@ exports.create = async function(req, res) {
                 roles: []
             });
             await newbusiness.save().then(result => {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: req.query.user_id,
+                    unique_name: req.query.unique_name,
+                    name: req.query.name,
+                    description: req.query.description,
+                    bid,
+                    unique_code,
+                    created_at: new Date(),
+                    created_by: req.query.user_id
+                });
+                kafkaSend('business_created', kafkaMessage);
+                //return unique_code;
                     res.status(200).json({
                         status: "success",
                         message: "Is created business successfull unique_code =" + unique_code,
@@ -70,8 +85,6 @@ exports.create = async function(req, res) {
                     });
                     throw error.message
                 });
-            // Publish event on Kafka
-            //return unique_code;
         } else {
             throw "unique_name is  undefine";
         }
@@ -95,6 +108,12 @@ exports.delete = async function(req, res) {
                 message: "Is delete business successfull"
             });
         } else {
+            // Publish event on Kafka
+            const kafkaMessage = JSON.stringify({
+                user_id: req.query.user_id,
+                bid: req.query.bid
+            });
+            kafkaSend('business_deleted', kafkaMessage);
             res.status(201).json({
                 status: "faild",
                 message: "Is delete business faild"
@@ -115,7 +134,7 @@ exports.edit = async function(req, res) {
     var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
         var query = { created_by: req.query.user_id, bid: req.query.bid };
-        var valueUpdate = { $set: { name: req.query.name, decription: req.query.decription } };
+        var valueUpdate = { $set: { name: req.query.name, description: req.query.description } };
         business.updateMany(query, valueUpdate, function(err, result) {
             if (err) {
                 console.log("update document error");
@@ -125,6 +144,14 @@ exports.edit = async function(req, res) {
                 });
             } else {
                 console.log("update document success");
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: req.query.user_id,
+                    name: req.query.name,
+                    description: req.query.description,
+                    bid: req.query.bid
+                });
+                kafkaSend('business_updated', kafkaMessage);
                 res.status(200).json({
                     status: "success",
                     message: "Is update business successfull"

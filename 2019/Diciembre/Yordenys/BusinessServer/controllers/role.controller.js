@@ -2,6 +2,7 @@ const business = require('../models/business.model');
 const Authorization = require('../Authorization/Authorization');
 const generateCode = require('../generateCode/generateCode');
 const role = require('../models/role.model');
+const kafkaSend = require('../kafka');
 
 exports.create = async function(req, res) {
     var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
@@ -28,8 +29,9 @@ exports.create = async function(req, res) {
             throw "rol with same unique name already exists";
         }
 
+        const role_id = generateCode.getNextId();
         businessTemp.roles.push(new role({
-            role_id: generateCode.getNextId(),
+            role_id,
             name: req.query.role_name,
             title: req.query.role_title,
             desc: req.query.role_desc,
@@ -49,6 +51,18 @@ exports.create = async function(req, res) {
                     message: "Is update rol faild"
                 });
             } else {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: req.query.user_id,
+                    role_id: req.query.dep_id,
+                    role_name: req.query.role_name,
+                    role_title: req.query.role_title,
+                    role_desc: req.query.role_desc,
+                    bid: req.query.bid,
+                    created_at: new Date(),
+                    created_by: req.query.user_id
+                });
+                kafkaSend('business_role_created', kafkaMessage);
                 res.status(200).json({
                     status: "success",
                     message: "Is update rol successfull"
@@ -67,7 +81,7 @@ exports.edit = async function(req, res) {
         find((rol) => {
             if (rol.role_id == req.query.dep_id) {
                 rol.name = req.query.name;
-                rol.desc = req.query.decription;
+                rol.desc = req.query.description;
                 rol.permissions = req.query.permissions;
             }
             return rol.role_id == req.query.role_id;
@@ -81,6 +95,15 @@ exports.edit = async function(req, res) {
                     message: "Is update business faild"
                 });
             } else {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: req.query.user_id,
+                    role_id: req.query.dep_id,
+                    bid: req.query.bid,
+                    name: req.query.name,
+                    description: req.query.description
+                });
+                kafkaSend('business_role_created', kafkaMessage);
                 res.status(200).json({
                     status: "success",
                     message: "Is update business successfull"
@@ -107,6 +130,13 @@ exports.delete = async function(req, res) {
                     message: "Is update business faild"
                 });
             } else {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: req.query.user_id,
+                    role_id: req.query.dep_id,
+                    bid: req.query.bid
+                });
+                kafkaSend('business_role_created', kafkaMessage);
                 res.status(200).json({
                     status: "success",
                     message: "Is update business successfull"
