@@ -46,14 +46,16 @@ app.use(function (req, res, next) {
             if (validateCredentials(clientInfo)) {
                 next();
             } else {
-                console.log('Invalid credentials provided');
                 res.status(400).send({
                     status: 'failed',
                     message: 'Invalid credentials provided'
                 });
             }
         } catch (e) {
-
+            res.status(400).send({
+                status: 'failed',
+                message: e.message
+            });
         }
     }
 });
