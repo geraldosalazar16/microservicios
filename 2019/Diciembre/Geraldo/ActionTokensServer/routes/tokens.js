@@ -1,7 +1,7 @@
 var express = require('express');
 var router = express.Router();
 const validateBody = require('../validators/body');
-const { tokenCredentials, tokenExist } = require('../validators/token');
+const { tokenCredentials } = require('../validators/token');
 const uuidv4 = require('uuid/v4');
 const Aerospike = require('aerospike');
 const makeDb = require('../database');
@@ -18,53 +18,62 @@ router.post('/createStandard', async (req, res) => {
     if (validationBody.status === 'failed') {
         res.status(400).send(validationBody);
     } else {
-        const tokenInfo = validationBody.body;
-        const aerospikeClient = await makeDb();
-        const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
-        tokensScan.concurrent = true;
-        tokensScan.nobins = false;
-        const clientsScan = aerospikeClient.scan(config.aerospike.namespace, 'clients');
-        tokensScan.concurrent = true;
-        tokensScan.nobins = false;
-        // Validate client credentials
-        const validToken = await tokenCredentials(tokenInfo, clientsScan);
-        if (validToken) {
-            const newToken = uuidv4();
-            // no other token exists in tokens table with same token value
-            const exist = await tokenExist(newToken, tokensScan);
-            if (!exist) {
-                const currentDate = new Date();
-                currentDate.setSeconds(currentDate.getSeconds() + parseInt(tokenInfo.expires, 10));
-                const max = tokenInfo.limited ? parseInt(tokenInfo.max) : -1;
-                const finalToken = {
-                    token: newToken,
-                    used: 0,
-                    max,
-                    limited: tokenInfo.limited,
-                    revoked: "false",
-                    created_at: new Date(),
-                    created_by: tokenInfo.user_id,
-                    purpose: tokenInfo.purpose,
-                    payload: tokenInfo.payload,
-                    expire_at: currentDate
-                };
-                const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'tokens', uuidv4());
-                await aerospikeClient.put(aerospikeKey, finalToken);
-                res.status(200).send({
-                    status: 'success',
-                    message: 'Token generated successfully',
-                    token: finalToken
-                });
+        try {    
+            const tokenInfo = validationBody.body;
+            console.log(tokenInfo);
+            const aerospikeClient = await makeDb();
+            const clientsScan = aerospikeClient.scan(config.aerospike.namespace, 'clients');
+            clientsScan.concurrent = true;
+            clientsScan.nobins = false;
+            // Validate client credentials
+            const validToken = await tokenCredentials(tokenInfo, clientsScan);
+            if (validToken) {
+                const newToken = uuidv4();
+                // no other token exists in tokens table with same token value
+                const key = new Aerospike.Key(config.aerospike.namespace, 'tokens', newToken);
+                const exist = await aerospikeClient.exists(key);
+                if (!exist) {
+                    const currentDate = new Date();
+                    currentDate.setSeconds(currentDate.getSeconds() + parseInt(tokenInfo.expires, 10));
+                    const max = tokenInfo.limited ? parseInt(tokenInfo.max) : -1;
+                    const finalToken = {
+                        token: newToken,
+                        used: 0,
+                        max,
+                        limited: tokenInfo.limited,
+                        revoked: "false",
+                        created_at: new Date(),
+                        created_by: tokenInfo.user_id,
+                        purpose: tokenInfo.purpose,
+                        payload: tokenInfo.payload,
+                        expire_at: currentDate
+                    };
+                    const aerospikeKey = new Aerospike.Key(config.aerospike.namespace, 'tokens', newToken);
+                    await aerospikeClient.put(aerospikeKey, finalToken);
+                    res.status(200).send({
+                        status: 'success',
+                        message: 'Token generated successfully',
+                        token: finalToken
+                    });
+                } else {
+                    console.log('Random generated token already exist');
+                    res.status(400).send({
+                        status: 'failed',
+                        message: 'Random generated token already exist'
+                    });
+                }
             } else {
+                console.log('Bad clientId or clientSecret');
                 res.status(400).send({
                     status: 'failed',
-                    message: 'Random generated token already exist'
+                    message: 'Bad clientId or clientSecret'
                 });
             }
-        } else {
+        } catch (error) {
+            console.log(error);
             res.status(400).send({
                 status: 'failed',
-                message: 'Bad clientId or clientSecret'
+                message: error.message
             });
         }
     }
@@ -94,7 +103,8 @@ router.post('/createNumeric', async (req, res) => {
             const config = require('../config.json');
             const newToken = Math.floor(Math.random() * Math.pow(10, parseInt(config.numericLength)));
             // no other token exists in tokens table with same token value
-            const exist = await tokenExist(newToken, tokensScan);
+            const key = new Aerospike.Key(config.aerospike.namespace, 'tokens', newToken);
+            const exist = await aerospikeClient.exists(key);
             // Expiry should be less than 24 hours
             if (tokenInfo.expires > 24 * 60 * 60) {
                 res.status(400).send({
@@ -150,9 +160,6 @@ router.post('/createAlphabetic', async (req, res) => {
     } else {
         const tokenInfo = validationBody.body;
         const aerospikeClient = await makeDb();
-        const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
-        tokensScan.concurrent = true;
-        tokensScan.nobins = false;
         const clientsScan = aerospikeClient.scan(config.aerospike.namespace, 'clients');
         tokensScan.concurrent = true;
         tokensScan.nobins = false;
@@ -163,7 +170,8 @@ router.post('/createAlphabetic', async (req, res) => {
             const config = require('../config.json');
             const newToken = random(config.stringLegth, arrAlphabetic);
             // no other token exists in tokens table with same token value
-            const exist = await tokenExist(newToken, tokensScan);
+            const key = new Aerospike.Key(config.aerospike.namespace, 'tokens', newToken);
+            const exist = await aerospikeClient.exists(key);
             // Expiry should be less than 24 hours
             if (tokenInfo.expires > 24 * 60 * 60) {
                 res.status(400).send({
@@ -232,7 +240,8 @@ router.post('/createAlphanumeric', async (req, res) => {
             const config = require('../config.json');
             const newToken = random(config.alphanumericLength, arrAlphanumeric);
             // no other token exists in tokens table with same token value
-            const exist = await tokenExist(newToken, tokensScan);
+            const key = new Aerospike.Key(config.aerospike.namespace, 'tokens', newToken);
+            const exist = await aerospikeClient.exists(key);
             // Expiry should be less than 24 hours
             if (tokenInfo.expires > 24 * 60 * 60) {
                 res.status(400).send({
@@ -290,18 +299,15 @@ router.post('/use', async (req, res) => {
         try {            
             // Get token_info row from tokens table using token parameter
             const aerospikeClient = await makeDb();
-            const tokensScan = aerospikeClient.scan(config.aerospike.namespace, 'tokens');
-            tokensScan.concurrent = true;
-            tokensScan.nobins = false;
-            const result = await filterScan(tokensScan, { field: 'token', value: parseInt(receivedToken.token) });
-            if (result.status === 'failed') {
+            const key = new Aerospike.Key(config.aerospike.namespace, 'tokens', receivedToken.token);
+            const record = await aerospikeClient.get(key);
+            const tokenRecord = record.bins;
+            if (!tokenRecord) {
                 res.status(400).send({
                     status: 'failed',
                     message: 'Invalid or expired token'
                 });
             } else {
-                const tokenRecord = result.record;
-                const tokenFull = result.fullRecord;
                 const expire_at = tokenRecord.expire_at;
                 const invalidToken = tokenRecord.revoked === 'true'
                     || expire_at < new Date()
@@ -321,14 +327,14 @@ router.post('/use', async (req, res) => {
                     if (tokenRecord.limited === 'true') {
                         if (used > tokenRecord.max) {
                             // Remove from database
-                            await aerospikeClient.remove(tokenFull.key);
+                            await aerospikeClient.remove(key);
                         } else {
                             // Update token info with new used value
-                            await aerospikeClient.operate(tokenFull.key, ops);
+                            await aerospikeClient.operate(key, ops);
                         }
                     } else {
                         // Update token info with new used value
-                        await aerospikeClient.operate(tokenFull.key, ops);
+                        await aerospikeClient.operate(key, ops);
                     }
                     // Create new row in usage_history table
                     const history = {

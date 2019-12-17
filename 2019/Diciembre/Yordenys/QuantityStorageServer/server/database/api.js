@@ -38,7 +38,7 @@ exports.readRecord = (key) => {
  * @param {Object} dataPath 
  * @param {Object} bins 
  */
-exports.writeRecord = ({namespace, set, key}, bins) => {
+exports.writeRecord = (namespace, set, key, bins) => {
     const aerospikeKey = new Aerospike.Key(namespace, set, key);
     try {
         // Put the record to the database.
@@ -63,7 +63,7 @@ exports.fetchRecordsFromStream = (stream, filter = []) => {
         const errors = [];
         stream.on('data', function (record) {
             // If received a filter option, only show included fields
-            if (FileReader.length > 0) {
+            if (filter.length > 0) {
                 const filteredRecord = {};
                 filter.foreach(field => {
                     filteredRecord[field] = record[field];
@@ -95,3 +95,37 @@ exports.deleteRecord = (key) => {
     }
 }
 
+/**
+ * Check if a record exist
+ * @param {String} key 
+ */
+exports.existRecord = (key) => {
+    try {
+        const result = await client.exist(key);
+        if (result) {
+            return success('Match found');
+        } else {
+            return failure('No match found');
+        } 
+    } catch (error) {
+        return failure(error.message);
+    }
+}
+
+/**
+ * Update a record in the database
+ * @param {Object} key 
+ * @param {Object} ops Operations to perform (usually write)
+ */
+exports.updateRecord = (key, ops) => {
+    try {
+        const result = await client.operate(key, ops);
+        if (result) {
+            return success('Record updated');
+        } else {
+            return failure('No record found');
+        } 
+    } catch (error) {
+        return failure(error.message);
+    }
+}

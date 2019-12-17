@@ -28,7 +28,6 @@ router.post('/create', async (req, res) => {
                     const currentDate = new Date().toString();
                     const clientSecret = hashSha512(clientInfo.name + currentDate);
                     Object.assign(clientInfo, { clientId, clientSecret, active: 'true' });
-                    console.log(clientInfo);
                     const aerospikeClient = await makeDb();
     
                     const putResult = await aerospikeClient.put(key, clientInfo);

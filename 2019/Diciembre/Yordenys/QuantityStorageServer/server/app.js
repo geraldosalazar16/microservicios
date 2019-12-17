@@ -3,10 +3,12 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+const aerospike = require('./database/api');
 
 var quantityRouter = require('./routes/quantity');
 
 var app = express();
+aerospike.connect();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));

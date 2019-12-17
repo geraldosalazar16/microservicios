@@ -1,4 +1,7 @@
 {
     "masterId": "ABCDEFGH",
-    "masterSecret": "WXYZ"
+    "masterSecret": "WXYZ",
+    "aerospike": {
+        "namespace": "test"
+    }
 }
