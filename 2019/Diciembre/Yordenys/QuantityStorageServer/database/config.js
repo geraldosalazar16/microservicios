@@ -5,7 +5,7 @@ exports.aerospikeConfig = () => {
     return {
         hosts: [
             { 
-                addr: aerospikeClusterIP,
+                addr: aerospikeClusterID,
                 port: aerospikeClusterPort
             }
         ]

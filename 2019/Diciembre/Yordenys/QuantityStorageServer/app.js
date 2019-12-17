@@ -5,7 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const aerospike = require('./database/api');
 
-var quantityRouter = require('./routes/quantity');
+var quantityRouter = require('./routes/quantityRoute');
 
 var app = express();
 aerospike.connect();

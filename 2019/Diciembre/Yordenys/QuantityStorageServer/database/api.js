@@ -18,13 +18,15 @@ exports.connect = async () => {
     }
 }
 
+exports.client = client;
+
 /**
  * Read a record from the database
  * https://www.aerospike.com/docs/client/nodejs/usage/kvs/read.html
  * @param {Object} key 
  * @returns {Object} Record
  */
-exports.readRecord = (key) => {
+exports.readRecord = async (key) => {
     try {
         const record = await client.get(key);
         return success('Record fetched', record);
@@ -38,7 +40,7 @@ exports.readRecord = (key) => {
  * @param {Object} dataPath 
  * @param {Object} bins 
  */
-exports.writeRecord = (namespace, set, key, bins) => {
+exports.writeRecord = async (namespace, set, key, bins) => {
     const aerospikeKey = new Aerospike.Key(namespace, set, key);
     try {
         // Put the record to the database.
@@ -63,12 +65,12 @@ exports.fetchRecordsFromStream = (stream, filter = []) => {
         const errors = [];
         stream.on('data', function (record) {
             // If received a filter option, only show included fields
-            if (filter.length > 0) {
-                const filteredRecord = {};
-                filter.foreach(field => {
-                    filteredRecord[field] = record[field];
+            if (filter) {
+                Object.keys(filter).forEach(field => {
+                    if (record.bins[field] === filter[field]) {
+                        records.push(record);
+                    }
                 });
-                records.push(filteredRecord);
             } else {
                 records.push(record);
             }
@@ -86,7 +88,7 @@ exports.fetchRecordsFromStream = (stream, filter = []) => {
  * Deletes a record form the database
  * @param {String} key 
  */
-exports.deleteRecord = (key) => {
+exports.deleteRecord = async (key) => {
     try {
         await client.remove(key);
         return success('Record deleted successfully');
@@ -99,7 +101,7 @@ exports.deleteRecord = (key) => {
  * Check if a record exist
  * @param {String} key 
  */
-exports.existRecord = (key) => {
+exports.existRecord = async (key) => {
     try {
         const result = await client.exist(key);
         if (result) {
@@ -117,7 +119,7 @@ exports.existRecord = (key) => {
  * @param {Object} key 
  * @param {Object} ops Operations to perform (usually write)
  */
-exports.updateRecord = (key, ops) => {
+exports.updateRecord = async (key, ops) => {
     try {
         const result = await client.operate(key, ops);
         if (result) {

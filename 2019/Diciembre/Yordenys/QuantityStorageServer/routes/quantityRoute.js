@@ -45,18 +45,50 @@ router.post(
   }
 );
 
-router.post('/get', function (req, res, next) {
-  res.send('respond with a resource');
-});
+router.post(
+  '/get',
+  [
+    body('bid', `bid cant't be undefined`).exists(),
+    body('reference', `reference cant't be undefined`).exists()
+  ],
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(422).json({ errors: errors.array() });
+    } else {
+      const result = await controller.get(req.body);
+      const status = result.status === 'success' ? 200 : 400;
+      res.status(status).json(result);
+    }
+  }
+);
 
-router.post('/batchSet', function (req, res, next) {
-  res.send('respond with a resource');
-});
+router.post(
+  '/batchSet',
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(422).json({ errors: errors.array() });
+    } else {
+      const result = await controller.batchSet(req.body.quantities);
+      const status = result.status === 'success' ? 200 : 400;
+      res.status(status).json(result);
+    }
+  }
+);
 
-router.post('/batchUpdate', function (req, res, next) {
-  res.send('respond with a resource');
-});
-
-
+router.post(
+  '/batchUpdate',
+  async (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(422).json({ errors: errors.array() });
+    } else {
+      const result = await controller.batchUpdate(req.body.quantities);
+      const status = result.status === 'success' ? 200 : 400;
+      res.status(status).json(result);
+    }
+  }
+);
 
 module.exports = router;
