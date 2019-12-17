@@ -4,9 +4,9 @@ const generateCode = require('../generateCode/generateCode');
 const role = require('../models/role.model');
 
 exports.create = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        if (req.body.role_name.length < 4) {
+        if (req.query.role_name.length < 4) {
             res.status(201).json({
                 status: "Fail",
                 message: "Error: Unique name should be at least 4 characters length"
@@ -14,10 +14,10 @@ exports.create = async function(req, res) {
             throw "Error: Unique name should be at least 4 characters length";
         }
 
-        var businessTemp = await business.find({ created_by: req.body.user_id, bid: req.body.bid })[0];
+        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0];
         var exists_rol_name = businessTemp.roles.
         find((rol) => {
-            return rol.name == req.body.role_name;
+            return rol.name == req.query.role_name;
         });
 
         if (exists_rol_name) {
@@ -30,15 +30,15 @@ exports.create = async function(req, res) {
 
         businessTemp.roles.push(new role({
             role_id: generateCode.getNextId(),
-            name: req.body.role_name,
-            title: req.body.role_title,
-            desc: req.body.role_desc,
+            name: req.query.role_name,
+            title: req.query.role_title,
+            desc: req.query.role_desc,
             created_at: new Date(),
-            created_by: req.body.user_id,
-            permissions: req.body.permissions
+            created_by: req.query.user_id,
+            permissions: req.query.permissions
         }));
 
-        var query = { created_by: req.body.user_id, bid: req.body.bid };
+        var query = { created_by: req.query.user_id, bid: req.query.bid };
 
         var valueUpdate = { $set: { roles: businessTemp.roles } };
 
@@ -60,19 +60,19 @@ exports.create = async function(req, res) {
 }
 
 exports.edit = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        var businessTemp = await business.find({ created_by: req.body.user_id, bid: req.body.bid })[0].
+        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
         relos.
         find((rol) => {
-            if (rol.role_id == req.body.dep_id) {
-                rol.name = req.body.name;
-                rol.desc = req.body.decription;
-                rol.permissions = req.body.permissions;
+            if (rol.role_id == req.query.dep_id) {
+                rol.name = req.query.name;
+                rol.desc = req.query.decription;
+                rol.permissions = req.query.permissions;
             }
-            return rol.role_id == req.body.role_id;
+            return rol.role_id == req.query.role_id;
         });
-        var query = { created_by: req.body.user_id, bid: req.body.bid };
+        var query = { created_by: req.query.user_id, bid: req.query.bid };
         var valueUpdate = { $set: { relos: businessTemp.relos } };
         await business.updateMany(query, valueUpdate, function(err, result) {
             if (err) {
@@ -91,14 +91,14 @@ exports.edit = async function(req, res) {
 }
 
 exports.delete = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        var businessTemp = await business.find({ created_by: req.body.user_id, bid: req.body.bid })[0].
+        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
         roles.
         filter((rol) => {
-            return rol.role_id != req.body.role_id;
+            return rol.role_id != req.query.role_id;
         });
-        var query = { created_by: req.body.user_id, bid: req.body.bid };
+        var query = { created_by: req.query.user_id, bid: req.query.bid };
         var valueUpdate = { $set: { roles: businessTemp.roles } };
         business.updateMany(query, valueUpdate, function(err, result) {
             if (err) {
@@ -117,9 +117,9 @@ exports.delete = async function(req, res) {
 }
 
 exports.list = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        listRoles = business.find({ created_by: req.body.user_id, bid: req.body.bid })[0].roles;
+        listRoles = business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].roles;
         if (listRoles) {
             res.status(200).json({
                 status: "success",

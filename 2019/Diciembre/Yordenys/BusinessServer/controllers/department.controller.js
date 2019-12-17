@@ -10,13 +10,13 @@ const department = require('../models/department.model');
  * @returns {Promise<void>}
  */
 exports.create = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        if (req.body.dep_name) {
+        if (req.query.dep_name) {
 
             // Check dep_name should be at least 6 characters length
 
-            if (req.body.dep_name.length < 4) {
+            if (req.query.dep_name.length < 4) {
                 res.status(201).json({
                     status: "Failed",
                     message: "Error: dep_name should be at least 4 characters length"
@@ -25,10 +25,10 @@ exports.create = async function(req, res) {
             }
 
             // Check unique_name already exists
-            var businessTemp = await business.find({ created_by: req.body.user_id, bid: req.body.bid })[0];
+            var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0];
             var exists_dep_name = businessTemp.departments.
             find((depart) => {
-                return depart.dep_name == req.body.dep_name;
+                return depart.dep_name == req.query.dep_name;
             });
 
             if (exists_dep_name) {
@@ -41,13 +41,13 @@ exports.create = async function(req, res) {
 
             businessTemp.departments.push(new department({
                 dep_id: generateCode.getNextId(),
-                dep_name: req.body.dep_name,
-                dep_title: req.body.dep_title,
-                dep_desc: req.body.dep_desc,
+                dep_name: req.query.dep_name,
+                dep_title: req.query.dep_title,
+                dep_desc: req.query.dep_desc,
                 created_at: new Date(),
-                created_by: req.body.user_id
+                created_by: req.query.user_id
             }));
-            var query = { user_id: req.body.user_id, bid: req.body.bid };
+            var query = { user_id: req.query.user_id, bid: req.query.bid };
             var valueUpdate = { $set: { departments: businessTemp.departments } };
             business.updateMany(query, valueUpdate, function(err, result) {
                 if (err) {
@@ -72,18 +72,18 @@ exports.create = async function(req, res) {
 }
 
 exports.edit = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        var businessTemp = await business.find({ created_by: req.body.user_id, bid: req.body.bid })[0].
+        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
         departments.
         find((depart) => {
-            if (depart.dep_id == req.body.dep_id) {
-                depart.dep_name = req.body.name;
-                depart.dep_desc = req.body.decription;
+            if (depart.dep_id == req.query.dep_id) {
+                depart.dep_name = req.query.name;
+                depart.dep_desc = req.query.decription;
             }
-            return depart.dep_id == req.body.dep_id;
+            return depart.dep_id == req.query.dep_id;
         });
-        var query = { user_id: req.body.user_id, bid: req.body.bid };
+        var query = { user_id: req.query.user_id, bid: req.query.bid };
         var valueUpdate = { $set: { departments: businessTemp.departments } };
         business.updateMany(query, valueUpdate, function(err, result) {
             if (err) {
@@ -104,9 +104,9 @@ exports.edit = async function(req, res) {
 }
 
 exports.list = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        departments = await business.find({ created_by: req.body.user_id, bid: req.body.bid })[0].departments;
+        departments = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].departments;
         if (departments) {
             res.status(200).json({
                 status: "success",
@@ -129,14 +129,14 @@ exports.list = async function(req, res) {
 }
 
 exports.delete = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.body.user_id, bid: req.body.bid });
+    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
     if (authorization) {
-        var businessTemp = await business.find({ created_by: req.body.user_id, bid: req.body.bid })[0].
+        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
         departments.
         filter((depart) => {
-            return depart.dep_id != req.body.dep_id;
+            return depart.dep_id != req.query.dep_id;
         });
-        var query = { user_id: req.body.user_id, bid: req.body.bid };
+        var query = { user_id: req.query.user_id, bid: req.query.bid };
         var valueUpdate = { $set: { departments: businessTemp.departments } };
         business.updateMany(query, valueUpdate, function(err, result) {
             if (err) {

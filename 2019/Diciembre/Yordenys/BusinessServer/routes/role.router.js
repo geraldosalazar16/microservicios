@@ -3,8 +3,8 @@ const router = express.Router();
 
 const role_controller = require('../controllers/role.controller');
 
-router.post('/create', role_controller.create);
-router.post('/edit', role_controller.edit);
-router.post('/delete', role_controller.delete);
-router.post('/list', role_controller.list);
+router.get('/create', role_controller.create);
+router.get('/edit', role_controller.edit);
+router.get('/delete', role_controller.delete);
+router.get('/list', role_controller.list);
 module.exports = router;

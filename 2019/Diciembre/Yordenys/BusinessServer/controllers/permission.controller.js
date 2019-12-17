@@ -4,11 +4,11 @@ const generateCode = require('../generateCode/generateCode');
 const role = require('../models/role.model');
 
 exports.list = async function(req, res) {
-    businessTemp = business.find({ bid: req.body.bid });
+    businessTemp = business.find({ bid: req.query.bid });
     if (businessTemp) {
         resul = []
         businessTemp.roles.find(rol => {
-            if (rol.role_id == req.body.role_id)
+            if (rol.role_id == req.query.role_id)
                 rol.permissions.forEach(perm => {
                     resul.push(perm.perm_id)
                 })

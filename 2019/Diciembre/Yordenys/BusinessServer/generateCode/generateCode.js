@@ -1,6 +1,7 @@
-module.exports = function IdGenerator() {
-    return "";
+module.exports.getNextCode = function() {
+    return "1";
 }
-module.exports = function getNextCode(unique_name) {
-    return "";
+
+module.exports.getNextId = function(unique_name) {
+    return "1";
 }
