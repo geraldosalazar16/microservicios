@@ -311,7 +311,7 @@ router.post('/use', async (req, res) => {
                 const expire_at = tokenRecord.expire_at;
                 const invalidToken = tokenRecord.revoked === 'true'
                     || expire_at < new Date()
-                    || (tokenRecord.limited === "true" && (tokenRecord.used > tokenRecord.max))
+                    || (tokenRecord.limited === "true" && (tokenRecord.used >= tokenRecord.max))
                     || receivedToken.purpose !== tokenRecord.purpose;
                 if (invalidToken) {
                     res.status(400).send({
