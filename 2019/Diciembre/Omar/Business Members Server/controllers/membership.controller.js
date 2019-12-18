@@ -1,6 +1,7 @@
 const Authorization = require('../libs/Authorization');
 const ActionTokens = require('../libs/ActionTokens');
 const membership = require('../models/membership.model');
+const {validationResult} = require('express-validator');
 const {sendMessages} = require('../kafka');
 const Roles = require('../libs/Roles');
 const IdGenerator = require('../libs/Generator');
@@ -14,7 +15,15 @@ const IdGenerator = require('../libs/Generator');
  */
 exports.invite = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid && req.body.dep_id && req.body.role_id) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             const auth = new Authorization();
 
             const method = req.body.method;
@@ -78,14 +87,9 @@ exports.invite = async function (req, res) {
                     message: 'Not authorized'
                 });
             }
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } or { dep_id } or { role_id } required'
-            });
         }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -94,14 +98,22 @@ exports.invite = async function (req, res) {
 
 
 /**
- *
+ * Join via invitation code
  * @param req
  * @param res
  * @returns {Promise<void>}
  */
 exports.join = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.invitation_code) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             var roles = new Roles();
             var generator = new IdGenerator();
 
@@ -193,14 +205,9 @@ exports.join = async function (req, res) {
                     message: 'Not authorized'
                 });
             }
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { invitation_code } required'
-            });
         }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -216,66 +223,62 @@ exports.join = async function (req, res) {
  */
 exports.revoke = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
-            if (req.body.target_user) {
-                const user_id = req.body.user_id;
-                const bid = req.body.bid;
-                const target_user = req.body.target_user;
+        // validation error
+        const errors = validationResult(req);
 
-                const auth = new Authorization();
-                const authorized = auth.authorize('/business/membership/revoke', {
-                    user_id: user_id,
-                    bid: bid,
-                    target: target_user
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
+            const user_id = req.body.user_id;
+            const bid = req.body.bid;
+            const target_user = req.body.target_user;
+
+            const auth = new Authorization();
+            const authorized = auth.authorize('/business/membership/revoke', {
+                user_id: user_id,
+                bid: bid,
+                target: target_user
+            });
+
+            if (authorized) {
+                // Delete
+                membership.deleteOne({user_id: target_user, bid: bid}, async function (err, res1) {
+                    if (err) {
+                        return res.status(400).json({
+                            status: 'failed',
+                            message: err.message
+                        });
+                    }
+
+                    if (res1.deletedCount == 0) {
+                        return res.status(201).json({
+                            status: 'failed',
+                            message: 'There is no item with this search criteria'
+                        });
+                    } else {
+                        const message = {
+                            user_id,
+                            target_user,
+                            bid,
+                            created_at: new Date().toString()
+                        };
+                        const messageResult = await sendMessages('business_membership_user_left_business', JSON.stringify(message));
+
+                        return res.status(200).json({
+                            status: 'success',
+                            message: 'Membership revoke succesfully'
+                        });
+                    }
                 });
-
-                if (authorized) {
-                    // Delete
-                    membership.deleteOne({user_id: target_user, bid: bid}, async function (err, res1) {
-                        if (err) {
-                            return res.status(400).json({
-                                status: 'failed',
-                                message: err.message
-                            });
-                        }
-
-                        if (res1.deletedCount == 0) {
-                            return res.status(201).json({
-                                status: 'failed',
-                                message: 'There is no item with this search criteria'
-                            });
-                        } else {
-                            const message = {
-                                user_id,
-                                target_user,
-                                bid,
-                                created_at: new Date().toString()
-                            };
-                            const messageResult = await sendMessages('business_membership_user_left_business', JSON.stringify(message));
-
-                            return res.status(200).json({
-                                status: 'success',
-                                message: 'Membership revoke succesfully'
-                            });
-                        }
-                    });
-                } else {
-                    res.status(400).json({
-                        status: 'failed',
-                        message: 'Not authorized'
-                    });
-                }
             } else {
                 res.status(400).json({
                     status: 'failed',
-                    message: 'Parameters { target_user } required'
+                    message: 'Not authorized'
                 });
             }
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { invitation_code } required'
-            });
         }
     } catch (e) {
         res.status(500).json({
@@ -294,7 +297,15 @@ exports.revoke = async function (req, res) {
  */
 exports.leave = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             const user_id = req.body.user_id;
             const bid = req.body.bid;
 
@@ -339,11 +350,6 @@ exports.leave = async function (req, res) {
                     message: 'Not authorized'
                 });
             }
-        } else {
-            return res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } required'
-            });
         }
     } catch (e) {
         return res.status(500).json({
@@ -362,7 +368,15 @@ exports.leave = async function (req, res) {
  */
 exports.list = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             const user_id = req.body.user_id;
             const bid = req.body.bid;
 
@@ -390,11 +404,6 @@ exports.list = async function (req, res) {
                     message: 'Not authorized'
                 });
             }
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } required'
-            });
         }
     } catch (e) {
         res.status(500).json({
@@ -413,7 +422,15 @@ exports.list = async function (req, res) {
  */
 exports.getrole = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             await membership.find({
                 user_id: req.body.user_id,
                 bid: req.body.bid
@@ -431,15 +448,10 @@ exports.getrole = async function (req, res) {
                     status: 'failed',
                     message: err.message
                 });
-            })
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } required'
             });
         }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -455,7 +467,15 @@ exports.getrole = async function (req, res) {
  */
 exports.getpermissions = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             await membership.find({
                 user_id: req.body.user_id,
                 bid: req.body.bid
@@ -477,11 +497,6 @@ exports.getpermissions = async function (req, res) {
                     status: 'failed',
                     message: err.message
                 });
-            })
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } required'
             });
         }
     } catch (e) {
@@ -501,7 +516,15 @@ exports.getpermissions = async function (req, res) {
  */
 exports.getdepartment = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             await membership.findOne({
                 user_id: req.body.user_id,
                 bid: req.body.bid
@@ -519,11 +542,6 @@ exports.getdepartment = async function (req, res) {
                     status: 'failed',
                     message: err.message
                 });
-            })
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } required'
             });
         }
     } catch (e) {
@@ -543,61 +561,57 @@ exports.getdepartment = async function (req, res) {
  */
 exports.userHasPermission = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
-            if (req.body.permission) {
-                await membership.findOne({
-                    user_id: req.body.user_id,
-                    bid: req.body.bid
-                }).then(function (memberships) {
-                    if (!memberships) {
-                        res.status(201).json({
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
+            await membership.findOne({
+                user_id: req.body.user_id,
+                bid: req.body.bid
+            }).then(function (memberships) {
+                if (!memberships) {
+                    res.status(200).json({
+                        status: 'success',
+                        message: 'There is no item with this search criteria'
+                    });
+                } else {
+                    if (memberships.role == '_owner') {
+                        res.status(200).json({
                             status: 'success',
-                            message: 'There is no item with this search criteria'
+                            message: 'Found permission'
                         });
                     } else {
-                        if (memberships.role == '_owner') {
-                            res.status(200).json({
+                        var found = memberships.permissions.find(function (element) {
+                            return element == req.body.permission;
+                        });
+
+                        if (found == null) {
+                            res.status(400).json({
                                 status: 'success',
-                                message: 'Found permission'
+                                message: 'Not found permission'
                             });
                         } else {
-                            var found = memberships.permissions.find(function (element) {
-                                return element == req.body.permission;
+                            res.status(200).json({
+                                status: 'failed',
+                                message: 'Found permission'
                             });
-
-                            if (found == null) {
-                                res.status(201).json({
-                                    status: 'success',
-                                    message: 'Not found permission'
-                                });
-                            } else {
-                                res.status(201).json({
-                                    status: 'failed',
-                                    message: 'Found permission'
-                                });
-                            }
                         }
                     }
-                }).catch(function (err) {
-                    res.status(400).json({
-                        status: 'failed',
-                        message: err.message
-                    });
-                })
-            } else {
+                }
+            }).catch(function (err) {
                 res.status(400).json({
                     status: 'failed',
-                    message: 'Parameters { permission } required'
+                    message: err.message
                 });
-            }
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } required'
             });
         }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -613,7 +627,15 @@ exports.userHasPermission = async function (req, res) {
  */
 exports.isowner = async function (req, res) {
     try {
-        if (req.body.user_id && req.body.bid) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
             await membership.findOne({
                 user_id: req.body.user_id,
                 bid: req.body.bid
@@ -641,11 +663,6 @@ exports.isowner = async function (req, res) {
                     status: 'failed',
                     message: err.message
                 });
-            })
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { user_id } or { bid } required'
             });
         }
     } catch (e) {

@@ -1,4 +1,5 @@
 const rules = require('../models/rules.model');
+const {validationResult} = require('express-validator');
 const AuthorizationEngine = require('../helpers/AuthorizationEngine');
 
 /**
@@ -9,48 +10,44 @@ const AuthorizationEngine = require('../helpers/AuthorizationEngine');
  */
 exports.set = async function (req, res) {
     try {
-        if (req.body.clientId && req.body.apiId) {
-            if (req.body.checklist) {
-                AuthorizationEngine.parse(req.body.checklist)
-                    .then(function (response) {
-                        var newRules = new rules({
-                            clientId: req.body.clientId,
-                            apiId: req.body.apiId,
-                            conditions: response
-                        });
+        // validation error
+        const errors = validationResult(req);
 
-                        newRules.save().then(function (res1) {
-                            res.status(200).json({
-                                status: 200,
-                                message: 'Rule api'
-                            });
-                        }).catch(function (err) {
-                            res.status(400).json({
-                                status: 'failed',
-                                message: err.message
-                            });
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
+            AuthorizationEngine.parse(req.body.checklist)
+                .then(function (response) {
+                    var newRules = new rules({
+                        clientId: req.body.clientId,
+                        apiId: req.body.apiId,
+                        conditions: response
+                    });
+
+                    newRules.save().then(function (res1) {
+                        res.status(200).json({
+                            status: 200,
+                            message: 'Rule api'
                         });
-                    })
-                    .catch(function (err) {
+                    }).catch(function (err) {
                         res.status(400).json({
                             status: 'failed',
                             message: err.message
                         });
-                    })
-            } else {
-                res.status(400).json({
-                    status: 'failed',
-                    message: 'Parameters { checklist } required'
+                    });
+                })
+                .catch(function (err) {
+                    res.status(400).json({
+                        status: 'failed',
+                        message: err.message
+                    });
                 });
-            }
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { clientId } or { apiId } required'
-            });
         }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -66,24 +63,31 @@ exports.set = async function (req, res) {
  */
 exports.getall = async function (req, res) {
     try {
-        if (req.body.clientId) {
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
+            console.log(req.body.clientId);
             await rules.findOne({clientId: req.body.clientId})//.select('name title desc clientId active')
                 .then(function (listRules) {
-                    res.send(listRules.conditions);
+                    if (listRules == null)
+                        listRules = [];
+
+                    res.status(200).json(listRules);
                 }).catch(function (err) {
                     res.status(400).json({
                         status: 'failed',
-                        message: e.message
+                        message: err.message
                     });
                 });
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { clientId } required'
-            });
         }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -99,8 +103,16 @@ exports.getall = async function (req, res) {
  */
 exports.delete = async function (req, res) {
     try {
-        if (req.body.clientId || req.body.apiId) {
-            rules.deleteOne({
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
+            });
+        } else {
+            await rules.deleteOne({
                 clientId: req.body.clientId,
                 apiId: req.body.apiId
             }, function (err, res1) {
@@ -112,7 +124,7 @@ exports.delete = async function (req, res) {
                 }
 
                 if (res1.deletedCount == 0) {
-                    res.status(201).json({
+                    res.status(400).json({
                         status: 'failed',
                         message: 'There is no item with this search criteria'
                     });
@@ -123,14 +135,9 @@ exports.delete = async function (req, res) {
                     });
                 }
             });
-        } else {
-            res.status(400).json({
-                status: 'failed',
-                message: 'Parameters { clientId } or { apiId } required'
-            });
         }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });

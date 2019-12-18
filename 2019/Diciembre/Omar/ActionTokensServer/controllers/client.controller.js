@@ -1,5 +1,6 @@
 const clients = require('../models/clients.model');
 const uuidv4 = require('uuid/v4');
+const {validationResult} = require('express-validator');
 const hashSha512 = require('../helpers/hash');
 
 /**
@@ -10,38 +11,48 @@ const hashSha512 = require('../helpers/hash');
  */
 exports.create = async function (req, res) {
     try {
-        const currentDate = new Date().toString();
-        const clientId = uuidv4();
-        const clientSecret = hashSha512(req.body.name + currentDate);
+        // validation error
+        const errors = validationResult(req);
 
-        const newClient = new clients({
-            clientId: clientId,
-            clientSecret: clientSecret,
-            name: req.body.name,
-            title: req.body.title,
-            desc: req.body.desc,
-            active: true
-        });
-
-        await newClient.save()
-            .then(result => {
-                console.log(result);
-                res.status(200).json({
-                    clientId: result.clientId,
-                    clientSecret: result.clientSecret,
-                    status: 'success',
-                    message: 'Client created succesfully'
-                });
-            })
-            .catch(error => {
-                console.log(error.message);
-                res.status(400).json({
-                    status: 'failed',
-                    message: error.message
-                });
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
             });
+        } else {
+            const currentDate = new Date().toString();
+            const clientId = uuidv4();
+            const clientSecret = hashSha512(req.body.name + currentDate);
+
+            const newClient = new clients({
+                clientId: clientId,
+                clientSecret: clientSecret,
+                name: req.body.name,
+                title: req.body.title,
+                desc: req.body.desc,
+                active: true
+            });
+
+            await newClient.save()
+                .then(result => {
+                    console.log(result);
+                    res.status(200).json({
+                        clientId: result.clientId,
+                        clientSecret: result.clientSecret,
+                        status: 'success',
+                        message: 'Client created succesfully'
+                    });
+                })
+                .catch(error => {
+                    console.log(error.message);
+                    res.status(400).json({
+                        status: 'failed',
+                        message: error.message
+                    });
+                });
+        }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -68,7 +79,7 @@ exports.delete = async function (req, res) {
                     }
 
                     if (res1.deletedCount == 0) {
-                        res.status(201).json({
+                        res.status(400).json({
                             status: 'failed',
                             message: 'There is no item with this search criteria'
                         });
@@ -91,7 +102,7 @@ exports.delete = async function (req, res) {
                     }
 
                     if (res1.deletedCount == 0) {
-                        res.status(201).json({
+                        res.status(400).json({
                             status: 'failed',
                             message: 'There is no item with this search criteria'
                         });
@@ -111,7 +122,7 @@ exports.delete = async function (req, res) {
         }
         clients.deleteOne({clientId: req.body.clientId});
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -138,7 +149,7 @@ exports.block = async function (req, res) {
                     }
 
                     if (res1.nModified == 0) {
-                        res.status(201).json({
+                        res.status(400).json({
                             status: 'failed',
                             message: 'There is no item with this search criteria'
                         });
@@ -161,7 +172,7 @@ exports.block = async function (req, res) {
                     }
 
                     if (res1.nModified == 0) {
-                        res.status(201).json({
+                        res.status(400).json({
                             status: 'failed',
                             message: 'There is no item with this search criteria'
                         });
@@ -208,7 +219,7 @@ exports.unblock = async function (req, res) {
                     }
 
                     if (res1.nModified == 0) {
-                        res.status(201).json({
+                        res.status(400).json({
                             status: 'failed',
                             message: 'There is no item with this search criteria'
                         });
@@ -231,7 +242,7 @@ exports.unblock = async function (req, res) {
                     }
 
                     if (res1.nModified == 0) {
-                        res.status(201).json({
+                        res.status(400).json({
                             status: 'failed',
                             message: 'There is no item with this search criteria'
                         });
@@ -251,7 +262,7 @@ exports.unblock = async function (req, res) {
         }
         clients.deleteOne({clientId: req.body.clientId});
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
@@ -265,19 +276,29 @@ exports.unblock = async function (req, res) {
  * @param res
  * @returns {Promise<void>}
  */
-exports.list = async function (req, res) {
+exports.list = async function(req, res) {
     try {
-        await clients.find({}).select('name title desc clientId active')
-            .then(function (clientes) {
-                res.send(clientes);
-            }).catch(function (err) {
-                res.status(400).json({
-                    status: 'failed',
-                    message: e.message
-                });
+        // validation error
+        const errors = validationResult(req);
+
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                status: 'failed',
+                message: errors.errors[0].msg
             });
+        } else {
+            await clients.find({clientId: req.body.clientId}).select('name title desc clientId active')
+                .then(function (clientes) {
+                    res.send(clientes);
+                }).catch(function (err) {
+                    res.status(400).json({
+                        status: 'failed',
+                        message: e.message
+                    });
+                });
+        }
     } catch (e) {
-        res.status(500).json({
+        res.status(400).json({
             status: 'failed',
             message: e.message
         });
