@@ -60,9 +60,9 @@ function readConfig() {
 }
 
 app.use('/business', BusinessRouter);
-app.use('/department', BusinessRouter);
-app.use('/permission', BusinessRouter);
-app.use('/role', BusinessRouter);
+app.use('/department', DepartmentRouter);
+app.use('/permission', PermissionRouter);
+app.use('/role', RoleRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
