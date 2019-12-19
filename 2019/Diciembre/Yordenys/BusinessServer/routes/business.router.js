@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { body, validationResult, check } = require('express-validator');
+const { body, validationResult, check, query } = require('express-validator');
 const { del, create, edit } = require('../controllers/business.controller');
 
 router.post('/create', [

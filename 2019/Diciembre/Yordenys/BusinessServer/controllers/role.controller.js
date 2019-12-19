@@ -6,7 +6,7 @@ const kafkaSend = require('../kafka');
 
 exports.create = async({ user_id, role_name, bid, role_title, role_desc, permissions }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
 
             var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
             var exists_rol_name = businessTemp.roles.
@@ -71,7 +71,7 @@ exports.create = async({ user_id, role_name, bid, role_title, role_desc, permiss
 
 exports.edit = async({ user_id, role_id, name, bid, decription, permissions }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
             var exists_rol_name = businessTemp.roles.
             find((rol) => {
@@ -122,7 +122,7 @@ exports.edit = async({ user_id, role_id, name, bid, decription, permissions }) =
 
 exports.del = async({ user_id, role_id, bid }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
             var description = ""
             var name = ""
@@ -173,7 +173,7 @@ exports.del = async({ user_id, role_id, bid }) => {
 
 exports.list = async function({ user_id, bid }) {
     try {
-        if (await new Authorization().authorize({ user_id, bid }))
+        if (await Authorization.authorize({ user_id: user_id }))
             return business.find({ created_by: user_id, bid: bid })[0].roles;
         return Array()
     } catch (error) {

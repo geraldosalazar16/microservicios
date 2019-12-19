@@ -1,8 +1,10 @@
-exports = class Authorization {
-    constructor() {
+ class Authorization {
+     constructor() {
 
-    }
-    authorize() {
-
-    }
-}
+     }
+     authorize() {
+         return true
+     }
+ }
+ auto = new Authorization()
+ module.exports = auto

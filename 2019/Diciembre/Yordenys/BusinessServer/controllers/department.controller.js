@@ -13,7 +13,7 @@ const kafkaSend = require('../kafka');
 
 exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             // Check exists_dep_name already exists
             var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
             var exists_dep_name = businessTemp.departments.
@@ -72,7 +72,7 @@ exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
 
 exports.edit = async({ user_id, bid, name, dep_id, decription }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             var businessTemp = await business.find({ created_by: user_id, bid: bid })[0].
             departments.
             find((depart) => {
@@ -115,7 +115,7 @@ exports.edit = async({ user_id, bid, name, dep_id, decription }) => {
 
 exports.list = async({ user_id, bid, dep_id }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             return await business.find({ created_by: user_id, bid: bid })[0].departments;;
         } else {
             return Array();
@@ -127,7 +127,7 @@ exports.list = async({ user_id, bid, dep_id }) => {
 
 exports.del = async function({ user_id, bid, dep_id }) {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             var description = ""
             var name = ""
             var businessTemp = await business.find({ created_by: user_id, bid: bid })[0].

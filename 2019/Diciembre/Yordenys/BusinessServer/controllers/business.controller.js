@@ -1,21 +1,11 @@
 const business = require('../models/business.model');
-const Authorization = require('../lib/Authorization');
+const Authorization = require('../lib/Authorization')
 const generateCode = require('../generateCode/generateCode');
 const kafkaSend = require('../kafka');
 
-function ExistsCodeGenerate() {
-    var Count_Code = 0;
-    var code = "";
-    do {
-        code = generateCode.getNextId();
-        Count_Code = business.find({ bid: code }).count();
-    } while (Count_Code != 0);
-    return code;
-}
-
 exports.create = async({ user_id, unique_name, name, decription }) => {
     try {
-        if (await new Authorization().authorize({ user_id: user_id })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             // Check unique_name already exists
             var is_unique_name = await business.find({ created_by: user_id, unique_name: unique_name }).count();
             if (is_unique_name != 0) {
@@ -24,8 +14,8 @@ exports.create = async({ user_id, unique_name, name, decription }) => {
                     message: "Business with same unique name already exists"
                 }
             }
-            var unique_code = await generateCode.getNextId(unique_name);
-            var bid = generateCode.getNextCode()
+            var unique_code = await generateCode.getNextId();
+            var bid = generateCode.getNextCode(unique_name)
                 // Store business in database
             const newbusiness = new business({
                 bid,
@@ -57,6 +47,10 @@ exports.create = async({ user_id, unique_name, name, decription }) => {
                 unique_code
             }
         }
+        return {
+            status: "Failed",
+            message: "You not access"
+        }
     } catch (error) {
         return {
             status: 'Failed',
@@ -68,7 +62,7 @@ exports.create = async({ user_id, unique_name, name, decription }) => {
 
 exports.del = async({ user_id, bid }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             var query = { created_by: user_id, bid: bid };
             temp_business = business.find({ created_by: user_id, bid: bid })[0]
             if (await business.deleteMany(query)) {
@@ -101,7 +95,7 @@ exports.del = async({ user_id, bid }) => {
 
 exports.edit = async({ user_id, bid, name, description }) => {
     try {
-        if (await new Authorization().authorize({ user_id, bid })) {
+        if (await Authorization.authorize({ user_id: user_id })) {
             var query = { created_by: user_id, bid: bid };
             var valueUpdate = { $set: { name: name, description: description } };
             if (await business.updateMany(query, valueUpdate).acknowledged) {
