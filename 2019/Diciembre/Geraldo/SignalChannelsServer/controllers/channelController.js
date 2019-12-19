@@ -5,6 +5,7 @@ const { success, failure } = require('../utils/responses');
 const uuidv4 = require('uuid/v4');
 const { sendMessages } = require('../kafka');
 const op = Aerospike.operations;
+const Authorization = require('../libs/Authorization');
 
 exports.request = async (channel) => {
     const {
@@ -34,39 +35,43 @@ exports.request = async (channel) => {
             const searchChannelResult = await db.fetchRecordsFromStream(stream, filter);
             if (searchChannelResult.status === 'success') {
                 const channel = searchChannelResult.data[0];
-                return {
-                    status: 'success',
-                    message: 'Channel found',
-                    channel: channel.name
-                }
-            } else {
-                // Store new channel
-                const newChannel = {
-                    name: `${bid}.${type}.${purpose}.${attrib || ""}`,
-                    bid,
-                    type,
-                    purpose,
-                    attrib
-                };
-                const storeInDbResult = await db.writeRecord(
-                    config.aerospike.namespace,
-                    'sig_channels',
-                    uuidv4(),
-                    newChannel
-                );
-                if (storeInDbResult.status === 'success') {
-                    // Publish to kafka
-                    const kafkaMessage = JSON.stringify(Object.assign(channel, {created_at: new Date()}));
-                    await sendMessages('signal_channel_created', kafkaMessage);
+                if (channel) {
                     return {
                         status: 'success',
-                        message: 'Signal Channel created',
-                        channel: newChannel.name
-                    };
+                        message: 'Channel found',
+                        channel: channel.bins.name
+                    }
                 } else {
-                    return failure(storeInDbResult.message || 'There was an error while storing the channel to the datbase');
+                    // Store new channel
+                    const newChannel = {
+                        name: `${bid}.${type}.${purpose}.${attrib || ""}`,
+                        bid,
+                        type,
+                        purpose,
+                        attrib
+                    };
+                    const storeInDbResult = await db.writeRecord(
+                        config.aerospike.namespace,
+                        'sig_channels',
+                        uuidv4(),
+                        newChannel
+                    );
+                    if (storeInDbResult.status === 'success') {
+                        // Publish to kafka
+                        const kafkaMessage = JSON.stringify(Object.assign(channel, { created_at: new Date() }));
+                        await sendMessages('signal_channel_created', kafkaMessage);
+                        return {
+                            status: 'success',
+                            message: 'Signal Channel created',
+                            channel: newChannel.name
+                        };
+                    } else {
+                        return failure(storeInDbResult.message || 'There was an error while storing the channel to the datbase');
+                    }
                 }
-            }   
+            } else {
+                return failure(searchChannelResult.message);
+            } 
         } else {
             return failure('Not authorized');
         }

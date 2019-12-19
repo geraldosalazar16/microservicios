@@ -66,11 +66,15 @@ exports.fetchRecordsFromStream = (stream, filter = []) => {
         stream.on('data', function (record) {
             // If received a filter option, only show included fields
             if (filter) {
+                let equal = true;
                 Object.keys(filter).forEach(field => {
-                    if (record.bins[field] === filter[field]) {
-                        records.push(record);
+                    if (record.bins[field] !== filter[field]) {
+                        equal = false;
                     }
                 });
+                if (equal) {
+                    records.push(record);
+                }
             } else {
                 records.push(record);
             }
