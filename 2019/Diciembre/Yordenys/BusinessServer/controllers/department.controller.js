@@ -1,5 +1,5 @@
 const business = require('../models/business.model');
-const Authorization = require('../Authorization/Authorization');
+const Authorization = require('../lib/Authorization');
 const generateCode = require('../generateCode/generateCode');
 const department = require('../models/department.model');
 const kafkaSend = require('../kafka');
@@ -10,176 +10,160 @@ const kafkaSend = require('../kafka');
  * @param res
  * @returns {Promise<void>}
  */
-exports.create = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        if (req.query.dep_name) {
 
-            // Check dep_name should be at least 6 characters length
-
-            if (req.query.dep_name.length < 4) {
-                res.status(201).json({
-                    status: "Failed",
-                    message: "Error: dep_name should be at least 4 characters length"
-                });
-                throw "Error: dep_name should be at least 4 characters length";
-            }
-
-            // Check unique_name already exists
-            var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0];
+exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            // Check exists_dep_name already exists
+            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
             var exists_dep_name = businessTemp.departments.
             find((depart) => {
-                return depart.dep_name == req.query.dep_name;
+                return depart.dep_name == dep_name;
             });
-
             if (exists_dep_name) {
-                res.status(201).json({
+                return {
                     status: "Failed",
                     message: "departments with same unique name already exists"
-                });
-                throw "departments with same unique name already exists";
+                }
             }
-
             const dep_id = generateCode.getNextId();
             businessTemp.departments.push(new department({
                 dep_id,
-                dep_name: req.query.dep_name,
-                dep_title: req.query.dep_title,
-                dep_desc: req.query.dep_desc,
-                created_at: new Date(),
-                created_by: req.query.user_id
+                dep_name: dep_name,
+                dep_title: dep_title,
+                dep_desc: dep_desc,
+                created_at: new Date().toString(),
+                created_by: user_id
             }));
-            var query = { user_id: req.query.user_id, bid: req.query.bid };
+            var query = { user_id: user_id, bid: bid };
             var valueUpdate = { $set: { departments: businessTemp.departments } };
-            business.updateMany(query, valueUpdate, function(err, result) {
-                if (err) {
-                    console.log("update document error");
-                    res.status(201).json({
-                        status: "faild",
-                        message: "Is update business faild"
-                    });
-                } else {
-                    console.log("update document success");
-                    // Publish event on Kafka
-                    const kafkaMessage = JSON.stringify({
-                        user_id: req.query.user_id,
-                        dep_id,
-                        dep_name: req.query.dep_name,
-                        dep_title: req.query.dep_title,
-                        dep_desc: req.query.dep_desc,
-                        bid: req.query.bid,
-                        created_at: new Date(),
-                        created_by: req.query.user_id
-                    });
-                    kafkaSend('business_department_created', kafkaMessage);
-                    res.status(200).json({
-                        status: "success",
-                        message: "Is update business successfull"
-                    });
+
+            if (await business.updateMany(query, valueUpdate).acknowledged) {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: user_id,
+                    dep_id,
+                    dep_name: dep_name,
+                    dep_title: dep_title,
+                    dep_desc: dep_desc,
+                    bid: bid,
+                    created_at: new Date().toString(),
+                    created_by: user_id
+                });
+                kafkaSend('business_department_created', kafkaMessage);
+                return {
+                    status: "success",
+                    message: "Is update business successfull"
                 }
-            });
-            // Publish event on Kafka
-        } else {
-            throw "dep_name is  undefine";
+            } else {
+                return {
+                    status: "faild",
+                    message: "Is update business faild"
+                }
+            }
+        }
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
         }
     }
 }
 
-exports.edit = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
-        departments.
-        find((depart) => {
-            if (depart.dep_id == req.query.dep_id) {
-                depart.dep_name = req.query.name;
-                depart.dep_desc = req.query.description;
-            }
-            return depart.dep_id == req.query.dep_id;
-        });
-        var query = { user_id: req.query.user_id, bid: req.query.bid };
-        var valueUpdate = { $set: { departments: businessTemp.departments } };
-        business.updateMany(query, valueUpdate, function(err, result) {
-            if (err) {
-                console.log("update document error");
-                res.status(201).json({
-                    status: "faild",
-                    message: "Is update business faild"
-                });
-            } else {
-                console.log("update document success");
+exports.edit = async({ user_id, bid, name, dep_id, decription }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0].
+            departments.
+            find((depart) => {
+                if (depart.dep_id == dep_id) {
+                    depart.dep_name = name;
+                    depart.dep_desc = description;
+                }
+                return depart.dep_id == dep_id;
+            });
+            var query = { user_id: user_id, bid: bid };
+            var valueUpdate = { $set: { departments: businessTemp.departments } };
+            if (business.updateMany(query, valueUpdate).acknowledged) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
-                    user_id: req.query.user_id,
-                    dep_id: req.query.dep_id,
-                    bid: req.query.bid,
-                    name: req.query.name,
-                    description: req.query.description
+                    user_id: user_id,
+                    dep_id: dep_id,
+                    bid: bid,
+                    name: name,
+                    description: description
                 });
                 kafkaSend('business_department_updated', kafkaMessage);
-                res.status(200).json({
+                return {
                     status: "success",
                     message: "Is update business successfull"
-                });
+                }
+            } else {
+                return {
+                    status: "faild",
+                    message: "Is update business faild"
+                }
             }
-        });
-    }
-}
-
-exports.list = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        departments = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].departments;
-        if (departments) {
-            res.status(200).json({
-                status: "success",
-                message: "query successfull"
-            });
-        } else {
-            res.status(201).json({
-                status: "faild",
-                message: "query faild"
-            });
         }
-        return departments;
-    } else {
-        res.status(201).json({
-            status: "faild",
-            message: "query faild"
-        });
-        throw "  access is not authorization";
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        }
     }
 }
 
-exports.delete = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
-        departments.
-        filter((depart) => {
-            return depart.dep_id != req.query.dep_id;
-        });
-        var query = { user_id: req.query.user_id, bid: req.query.bid };
-        var valueUpdate = { $set: { departments: businessTemp.departments } };
-        business.updateMany(query, valueUpdate, function(err, result) {
-            if (err) {
-                res.status(201).json({
-                    status: "faild",
-                    message: "Is update business faild"
-                });
-            } else {
+exports.list = async({ user_id, bid, dep_id }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            return await business.find({ created_by: user_id, bid: bid })[0].departments;;
+        } else {
+            return Array();
+        }
+    } catch (error) {
+        return Array();
+    }
+}
+
+exports.del = async function({ user_id, bid, dep_id }) {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            var description = ""
+            var name = ""
+            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0].
+            departments.
+            filter((depart) => {
+                description = depart.description
+                name = depart.name
+                return depart.dep_id != dep_id;
+            });
+            var query = { user_id: user_id, bid: bid };
+            var valueUpdate = { $set: { departments: businessTemp.departments } };
+            if (business.updateMany(query, valueUpdate).acknowledged) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
-                    user_id: req.query.user_id,
-                    dep_id: req.query.dep_id,
-                    bid: req.query.bid
+                    user_id: user_id,
+                    dep_id: dep_id,
+                    bid: bid,
+                    name: name,
+                    description: description
                 });
                 kafkaSend('business_department_updated', kafkaMessage);
-                res.status(200).json({
+                return {
                     status: "success",
                     message: "Is update business successfull"
-                });
+                }
+            } else {
+                return {
+                    status: "faild",
+                    message: "Is update business faild"
+                }
             }
-        });
+        }
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        }
     }
 }

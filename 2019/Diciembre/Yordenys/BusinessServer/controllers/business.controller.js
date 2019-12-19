@@ -1,163 +1,127 @@
 const business = require('../models/business.model');
-const Authorization = require('../Authorization/Authorization');
+const Authorization = require('../lib/Authorization')
 const generateCode = require('../generateCode/generateCode');
 const kafkaSend = require('../kafka');
 
-function ExistsCodeGenerate() {
-    var Count_Code = 0;
-    var code = "";
-    do {
-        code = generateCode.getNextId();
-        Count_Code = business.find({ bid: code }).count();
-    } while (Count_Code != 0);
-    return code;
-}
-/**
- * This API creates a business and stores it in business table
- * @param req
- * @param res
- * @returns {Promise<void>}
- */
-exports.create = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id })
-    if (authorization) {
-        if (req.query.unique_name) {
-
-            // Check Unique name should be at least 6 characters length
-
-            if (req.query.unique_name.length < 6) {
-                res.status(201).json({
-                    status: "Fail",
-                    message: "Error: Unique name should be at least 6 characters length"
-                });
-                throw "Error: Unique name should be at least 6 characters length";
-            }
-
+exports.create = async({ user_id, unique_name, name, decription }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
             // Check unique_name already exists
-            var count_unique_name = await business.find({ created_by: req.query.user_id, unique_name: req.query.unique_name }).count();
-
-            if (count_unique_name != 0) {
-                res.status(201).json({
+            var is_unique_name = await business.find({ created_by: user_id, unique_name: unique_name }).count();
+            if (is_unique_name != 0) {
+                return {
                     status: "Failed",
                     message: "Business with same unique name already exists"
-                });
-                throw "Business with same unique name already exists";
+                }
             }
-
-            var unique_code = await generateCode.getNextId(req.query.unique_name);
-            var bid = generateCode.getNextCode();
-            // Store business in database
-
+            var unique_code = await generateCode.getNextId();
+            var bid = generateCode.getNextCode(unique_name)
+                // Store business in database
             const newbusiness = new business({
                 bid,
-                created_at: new Date(),
-                created_by: req.query.user_id,
-                unique_name: req.query.unique_name,
+                created_at: new Date().toString(),
+                created_by: user_id,
+                unique_name: unique_name,
                 unique_code: unique_code,
-                name: req.query.name,
-                description: req.query.description,
+                name: name,
+                description: decription,
                 departments: [],
                 roles: []
-            });
-            await newbusiness.save().then(result => {
+            })
+            await newbusiness.save()
                 // Publish event on Kafka
-                const kafkaMessage = JSON.stringify({
-                    user_id: req.query.user_id,
-                    unique_name: req.query.unique_name,
-                    name: req.query.name,
-                    description: req.query.description,
-                    bid,
-                    unique_code,
-                    created_at: new Date(),
-                    created_by: req.query.user_id
-                });
-                kafkaSend('business_created', kafkaMessage);
-                //return unique_code;
-                    res.status(200).json({
-                        status: "success",
-                        message: "Is created business successfull unique_code =" + unique_code,
-                    });
-                })
-                .catch(error => {
-                    res.status(201).json({
-                        status: "Failed",
-                        message: error.message
-                    });
-                    throw error.message
-                });
-        } else {
-            throw "unique_name is  undefine";
-        }
-    }
-}
-
-
-/**
- * This API deletes a business from business table
- * @param req
- * @param res
- * @returns {Promise<void>}
- */
-exports.delete = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        var query = { created_by: req.query.user_id, bid: req.query.bid };
-        if (await business.deleteMany(query)) {
-            res.status(200).json({
-                status: "success",
-                message: "Is delete business successfull"
-            });
-        } else {
-            // Publish event on Kafka
             const kafkaMessage = JSON.stringify({
-                user_id: req.query.user_id,
-                bid: req.query.bid
-            });
-            kafkaSend('business_deleted', kafkaMessage);
-            res.status(201).json({
-                status: "faild",
-                message: "Is delete business faild"
-            });
+                user_id: user_id,
+                unique_name: unique_name,
+                name: name,
+                description: description,
+                bid,
+                unique_code,
+                created_at: new Date(),
+                created_by: user_id
+            })
+            kafkaSend('business_created', kafkaMessage);
+            //return unique_code;
+            return {
+                status: "success",
+                unique_code
+            }
         }
-        // Publish event on Kafka
+        return {
+            status: "Failed",
+            message: "You not access"
+        }
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        };
+
     }
 }
 
-
-/**
- * This API edit a business
- * @param req
- * @param res
- * @returns {Promise<void>}
- */
-exports.edit = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        var query = { created_by: req.query.user_id, bid: req.query.bid };
-        var valueUpdate = { $set: { name: req.query.name, description: req.query.description } };
-        business.updateMany(query, valueUpdate, function(err, result) {
-            if (err) {
-                console.log("update document error");
-                res.status(201).json({
-                    status: "faild",
-                    message: "Is update business faild"
-                });
-            } else {
-                console.log("update document success");
+exports.del = async({ user_id, bid }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            var query = { created_by: user_id, bid: bid };
+            temp_business = business.find({ created_by: user_id, bid: bid })[0]
+            if (await business.deleteMany(query)) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
-                    user_id: req.query.user_id,
-                    name: req.query.name,
-                    description: req.query.description,
-                    bid: req.query.bid
+                    user_id: user_id,
+                    bid: bid,
+                    decription: temp_business.decription,
+                    name: temp_business.name
+                });
+                kafkaSend('business_deleted', kafkaMessage);
+                return {
+                    status: "success",
+                    message: "Is delete business successfull"
+                };
+            } else {
+                return {
+                    status: "faild",
+                    message: "Is delete business faild"
+                };
+            }
+        }
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        };
+    }
+}
+
+exports.edit = async({ user_id, bid, name, description }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            var query = { created_by: user_id, bid: bid };
+            var valueUpdate = { $set: { name: name, description: description } };
+            if (await business.updateMany(query, valueUpdate).acknowledged) {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: user_id,
+                    name: name,
+                    description: description,
+                    bid: bid
                 });
                 kafkaSend('business_updated', kafkaMessage);
-                res.status(200).json({
+                return {
                     status: "success",
                     message: "Is update business successfull"
-                });
+                };
+            } else {
+                return {
+                    status: "faild",
+                    message: "Is update business faild"
+                };
             }
-        });
-        // Publish event on Kafka
+        }
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        };
     }
 }

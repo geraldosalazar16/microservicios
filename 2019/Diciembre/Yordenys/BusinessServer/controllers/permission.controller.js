@@ -1,28 +1,25 @@
 const business = require('../models/business.model');
-const Authorization = require('../Authorization/Authorization');
+const Authorization = require('../lib/Authorization');
 const generateCode = require('../generateCode/generateCode');
 const role = require('../models/role.model');
 
-exports.list = async function(req, res) {
-    businessTemp = business.find({ bid: req.query.bid });
-    if (businessTemp) {
-        resul = []
-        businessTemp.roles.find(rol => {
-            if (rol.role_id == req.query.role_id)
-                rol.permissions.forEach(perm => {
-                    resul.push(perm.perm_id)
-                })
-        });
-        res.status(200).json({
-            status: "success",
-            message: "Is operation successfull"
-        });
-        return resul
-    } else {
-        res.status(201).json({
-            status: "faild",
-            message: "Is operation faild"
-        });
-        throw "Is operation faild"
+exports.list = async({ role_id, bid }) => {
+    try {
+        businessTemp = await business.find({ bid: bid });
+        if (businessTemp) {
+            resul = []
+            await businessTemp.roles.find(rol => {
+                if (rol.role_id == role_id)
+                    rol.permissions.forEach(perm => {
+                        resul.push(perm.perm_id)
+                    })
+                return rol.role_id == role_id
+            });
+            return resul
+        } else {
+            return Array()
+        }
+    } catch (error) {
+        return Array()
     }
 }

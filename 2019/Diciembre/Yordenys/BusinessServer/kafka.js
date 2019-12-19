@@ -1,5 +1,5 @@
 const kafka = require('kafka-node');
-const config = require('../config.json');
+const config = require('../BusinessServer/config/config');
 
 /**
  * @param {String} topic Kafka topic
@@ -13,12 +13,10 @@ module.exports = (topic, messages) => {
         const client = new kafka.KafkaClient({ kafkaHost: config.kafka_server });
         const producer = new Producer(client);
 
-        let payloads = [
-            {
-                topic: topic,
-                messages: messages
-            }
-        ];
+        let payloads = [{
+            topic: topic,
+            messages: messages
+        }];
 
         producer.on('ready', () => {
             producer.send(payloads, (err, data) => {

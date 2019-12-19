@@ -1,166 +1,182 @@
 const business = require('../models/business.model');
-const Authorization = require('../Authorization/Authorization');
+const Authorization = require('../lib/Authorization');
 const generateCode = require('../generateCode/generateCode');
 const role = require('../models/role.model');
 const kafkaSend = require('../kafka');
 
-exports.create = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        if (req.query.role_name.length < 4) {
-            res.status(201).json({
-                status: "Fail",
-                message: "Error: Unique name should be at least 4 characters length"
+exports.create = async({ user_id, role_name, bid, role_title, role_desc, permissions }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+
+            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
+            var exists_rol_name = businessTemp.roles.
+            find((rol) => {
+                return rol.name == role_name;
             });
-            throw "Error: Unique name should be at least 4 characters length";
-        }
 
-        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0];
-        var exists_rol_name = businessTemp.roles.
-        find((rol) => {
-            return rol.name == req.query.role_name;
-        });
+            if (exists_rol_name) {
+                return {
+                    status: "Failed",
+                    message: "rol with same unique name already exists"
+                }
+            }
 
-        if (exists_rol_name) {
-            res.status(201).json({
-                status: "Failed",
-                message: "rol with same unique name already exists"
-            });
-            throw "rol with same unique name already exists";
-        }
+            const role_id = generateCode.getNextId();
+            businessTemp.roles.push(new role({
+                role_id,
+                name: role_name,
+                title: role_title,
+                desc: role_desc,
+                created_at: new Date(),
+                created_by: user_id,
+                permissions: permissions
+            }));
 
-        const role_id = generateCode.getNextId();
-        businessTemp.roles.push(new role({
-            role_id,
-            name: req.query.role_name,
-            title: req.query.role_title,
-            desc: req.query.role_desc,
-            created_at: new Date(),
-            created_by: req.query.user_id,
-            permissions: req.query.permissions
-        }));
+            var query = { created_by: user_id, bid: bid };
 
-        var query = { created_by: req.query.user_id, bid: req.query.bid };
+            var valueUpdate = { $set: { roles: businessTemp.roles } };
 
-        var valueUpdate = { $set: { roles: businessTemp.roles } };
-
-        await business.updateMany(query, valueUpdate, function(err, result) {
-            if (err) {
-                res.status(201).json({
-                    status: "faild",
-                    message: "Is update rol faild"
-                });
-            } else {
+            if (await business.updateMany(query, valueUpdate).acknowledged) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
-                    user_id: req.query.user_id,
-                    role_id: req.query.dep_id,
-                    role_name: req.query.role_name,
-                    role_title: req.query.role_title,
-                    role_desc: req.query.role_desc,
-                    bid: req.query.bid,
+                    user_id: user_id,
+                    role_id: dep_id,
+                    role_name: role_name,
+                    role_title: role_title,
+                    role_desc: role_desc,
+                    bid: bid,
                     created_at: new Date(),
-                    created_by: req.query.user_id
+                    created_by: user_id
                 });
                 kafkaSend('business_role_created', kafkaMessage);
-                res.status(200).json({
+                return {
                     status: "success",
                     message: "Is update rol successfull"
-                });
-            }
-        });
-        // event kafka
-    }
-}
-
-exports.edit = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
-        relos.
-        find((rol) => {
-            if (rol.role_id == req.query.dep_id) {
-                rol.name = req.query.name;
-                rol.desc = req.query.description;
-                rol.permissions = req.query.permissions;
-            }
-            return rol.role_id == req.query.role_id;
-        });
-        var query = { created_by: req.query.user_id, bid: req.query.bid };
-        var valueUpdate = { $set: { relos: businessTemp.relos } };
-        await business.updateMany(query, valueUpdate, function(err, result) {
-            if (err) {
-                res.status(201).json({
+                }
+            } else {
+                return {
                     status: "faild",
                     message: "Is update business faild"
-                });
-            } else {
-                // Publish event on Kafka
-                const kafkaMessage = JSON.stringify({
-                    user_id: req.query.user_id,
-                    role_id: req.query.dep_id,
-                    bid: req.query.bid,
-                    name: req.query.name,
-                    description: req.query.description
-                });
-                kafkaSend('business_role_created', kafkaMessage);
-                res.status(200).json({
-                    status: "success",
-                    message: "Is update business successfull"
-                });
+                }
             }
-        });
-    }
-}
-
-exports.delete = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        var businessTemp = await business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].
-        roles.
-        filter((rol) => {
-            return rol.role_id != req.query.role_id;
-        });
-        var query = { created_by: req.query.user_id, bid: req.query.bid };
-        var valueUpdate = { $set: { roles: businessTemp.roles } };
-        business.updateMany(query, valueUpdate, function(err, result) {
-            if (err) {
-                res.status(201).json({
-                    status: "faild",
-                    message: "Is update business faild"
-                });
-            } else {
-                // Publish event on Kafka
-                const kafkaMessage = JSON.stringify({
-                    user_id: req.query.user_id,
-                    role_id: req.query.dep_id,
-                    bid: req.query.bid
-                });
-                kafkaSend('business_role_created', kafkaMessage);
-                res.status(200).json({
-                    status: "success",
-                    message: "Is update business successfull"
-                });
-            }
-        });
-    }
-}
-
-exports.list = async function(req, res) {
-    var authorization = await Authorization.authorize({ user_id: req.query.user_id, bid: req.query.bid });
-    if (authorization) {
-        listRoles = business.find({ created_by: req.query.user_id, bid: req.query.bid })[0].roles;
-        if (listRoles) {
-            res.status(200).json({
-                status: "success",
-                message: "Is delete role successfull"
-            });
-        } else {
-            res.status(201).json({
-                status: "faild",
-                message: "Is delete role faild"
-            });
         }
-        return listRoles
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        }
+    }
+}
+
+
+exports.edit = async({ user_id, role_id, name, bid, decription, permissions }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
+            var exists_rol_name = businessTemp.roles.
+            find((rol) => {
+                if (rol.role_id == dep_id) {
+                    rol.name = name;
+                    rol.desc = description;
+                    rol.permissions = permissions;
+                }
+                return rol.role_id == role_id;
+            });
+            if (!exists_rol_name) {
+                return {
+                    status: "Failed",
+                    message: "rol with same unique name already not exists"
+                }
+            }
+            var query = { created_by: user_id, bid: bid };
+            var valueUpdate = { $set: { roles: businessTemp.roles } };
+            if (await business.updateMany(query, valueUpdate).acknowledged) {
+                // Publish event on Kafka
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: user_id,
+                    role_id: dep_id,
+                    bid: bid,
+                    name: name,
+                    description: decription
+                });
+                kafkaSend('business_role_created', kafkaMessage);
+                res.status(200).json({
+                    status: "success",
+                    message: "Is update business successfull"
+                });
+            } else {
+                return {
+                    status: "faild",
+                    message: "Is update business faild"
+                }
+            }
+        }
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        }
+    }
+}
+
+exports.del = async({ user_id, role_id, bid }) => {
+    try {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
+            var description = ""
+            var name = ""
+            var exists_rol_name = businessTemp.roles.
+            filter((rol) => {
+                if (rol.role_id == role_id) {
+                    description = rol.role_desc
+                    name = rol.role_name
+                }
+                return rol.role_id != role_id;
+            });
+            if (!exists_rol_name) {
+                return {
+                    status: "Failed",
+                    message: "rol with same unique name already not exists"
+                }
+            }
+            var query = { created_by: user_id, bid: bid };
+            var valueUpdate = { $set: { roles: businessTemp.roles } };
+            if (await business.updateMany(query, valueUpdate).acknowledged) {
+                // Publish event on Kafka
+                const kafkaMessage = JSON.stringify({
+                    user_id: user_id,
+                    role_id: dep_id,
+                    bid: bid,
+                    name: name,
+                    description: description
+                });
+                kafkaSend('business_role_created', kafkaMessage);
+                return {
+                    status: "success",
+                    message: "Is update business successfull"
+                }
+            } else {
+                return {
+                    status: "faild",
+                    message: "Is update business faild"
+                }
+            }
+        }
+    } catch (error) {
+        return {
+            status: 'Failed',
+            message: error.message
+        }
+    }
+}
+
+exports.list = async function({ user_id, bid }) {
+    try {
+        if (await Authorization.authorize({ user_id: user_id }))
+            return business.find({ created_by: user_id, bid: bid })[0].roles;
+        return Array()
+    } catch (error) {
+        return Array()
     }
 }

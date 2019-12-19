@@ -18,7 +18,6 @@ const Schema = mongoose.Schema;
  */
 let business = new Schema({
     bid: { type: String, unique: true },
-    user_id: { type: String, unique: true },
     created_at: { type: Date },
     created_by: { type: String, unique: true },
     unique_name: { type: String },
