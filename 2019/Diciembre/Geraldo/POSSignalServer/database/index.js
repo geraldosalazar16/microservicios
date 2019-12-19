@@ -1,16 +1,49 @@
-const mongoose = require('mongoose');
-const config = require('../config.json');
+const redis = require('redis');
+const redisClient = redis.createClient();
 
 /**
- * Call this function to initialize database connection
- * We only have to call this once
- * All database operations willl be buffered till mongoose finish connecting
+ * Add a register to redis collection
+ * @param {String} redisKey Collection name
+ * @param {Object} register Register to add
+ * @param {Array} compareFields Fields to determine if the register already exist
  */
-module.exports = () => {
-    mongoose.connect(config.mongodb.connectionString, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
-    });
-    mongoose.set('useCreateIndex', true);
-    const db = mongoose.connection;
+exports.add = (redisKey, register, compareFields = []) => {
+    return new Promise(resolve => {
+        redisClient.get(redisKey, (err, collection) => {
+            if (err) {
+                resolve({
+                    status: 'failed',
+                    message: err.message
+                })
+            } else {
+                // If collection exist, parse it, else create an empty array
+                const parsedData = collection ? JSON.parse(collection) : [];
+                // If compareFields received, check if the record exist
+                if (compareFields.length > 0) {
+                    const indexFound = parsedData.findIndex((element) => {
+                        let equals = true;
+                        compareFields.forEach(field => {
+                            if (element[field] !== register[field]) {
+                                equals = false;
+                            }
+                        });
+                        return equals;
+                    });
+                    if (indexFound >= 0) {
+                        parsedData[indexFound] = register;
+                    } else {
+                        parsedData.push(register);
+                    }
+                } else {
+                    parsedData.push(register);
+                }
+                // Push the new register
+                redisClient.set(redisKey, JSON.stringify(parsedData));
+                resolve({
+                    status: 'success',
+                    message: 'Register added succesfully'
+                })
+            }
+        });
+    })
 }

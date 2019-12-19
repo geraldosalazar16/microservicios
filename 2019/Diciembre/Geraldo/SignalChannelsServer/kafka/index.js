@@ -1,11 +1,17 @@
 const kafka = require('kafka-node');
-const topicHandlers = require('./topicHandlers');
+const bp = require('body-parser');
 const config = require('../config.json');
-const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
 
+/**
+ * @param {String} topic Kafka topic
+ * @param {String} messages Message to send. It can be a single string, a KafkaMessage 
+ * or an array of strings or KafkaMessage
+ * @returns Promise with the result of sending the message
+ */
 exports.sendMessages = (topic, messages) => {
     return new Promise((resolve, reject) => {
         const Producer = kafka.Producer;
+        const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
         const producer = new Producer(client);
 
         let payloads = [
@@ -38,30 +44,4 @@ exports.sendMessages = (topic, messages) => {
             });
         });
     });
-}
-
-exports.listen = () => {
-    Consumer = kafka.Consumer;
-    consumer = new Consumer(
-        client,
-        [
-            {
-                topic: 'quantity_set',
-                partition: config.kafka.partition
-            },
-            {
-                topic: 'quantity_updated',
-                partition: config.kafka.partition
-            }
-        ],
-        {
-            autoCommit: false
-        }
-    );
-
-    consumer.on('message', (message) => {
-        topicHandlers[message.topic](message);
-    });
-
-    consumer.on('error', (err) => {})
 }

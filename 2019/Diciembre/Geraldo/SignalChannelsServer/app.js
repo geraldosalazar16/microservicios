@@ -3,9 +3,14 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-var directRouter = require('./routes/directRoute');
+const aerospike = require('./database/api');
+
+var channelRouter = require('./routes/channelRoute');
 
 var app = express();
+
+// Connect to database
+aerospike.connect();
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -17,12 +22,7 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Set up kafka listeners
-const kafka = require('./kafka');
-kafka.listen();
-
-
-app.use('/direct', directRouter);
+app.use('/channel', channelRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

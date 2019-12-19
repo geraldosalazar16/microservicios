@@ -1,6 +1,7 @@
 {
     "kafka": {
-        "server": "127.0.0.1:9092"
+        "server": "127.0.0.1:9092",
+        "partition": 0
     },
     "mongodb": {
         "connectionString": "mongodb+srv://microservice:microservice881016@cluster0-biqaq.mongodb.net/test?retryWrites=true&w=majority"

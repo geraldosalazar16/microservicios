@@ -6,6 +6,25 @@ const orderDb = require('../schemas/orderSchema');
 const { success, failure } = require('../utils/response');
 
 exports.create = async ({ bid, user_id, dev_id, dev_serial, order_info }) => {
+  const {
+    invoice_number,
+    chid,
+    seller_name,
+    seller_id,
+    customer_id,
+    customer_name,
+    customer_address,
+    customer_phone,
+    total_tax_inc,
+    total_tax_exc,
+    tax,
+    tax_label,
+    total_discount,
+    total_no_disc,
+    products,
+    created_at,
+    invoice_type
+  } = order_info;
   try {
     // Authorize
     const authorized = await Authorization.authorize('/order/create', {
@@ -13,7 +32,7 @@ exports.create = async ({ bid, user_id, dev_id, dev_serial, order_info }) => {
       dev_id,
       dev_serial,
       bid,
-      invoice_type: order_info.invoice_type
+      invoice_type
     });
     if (authorized.status === 'success') {
       const order_id = await IdGenerator.getNextId();
@@ -23,7 +42,23 @@ exports.create = async ({ bid, user_id, dev_id, dev_serial, order_info }) => {
         user_id,
         dev_id,
         dev_serial,
-        invoice_type: order_info.invoice_type
+        invoice_number,
+        chid,
+        seller_name,
+        seller_id,
+        customer_id,
+        customer_name,
+        customer_address,
+        customer_phone,
+        total_tax_inc,
+        total_tax_exc,
+        tax,
+        tax_label,
+        total_discount,
+        total_no_disc,
+        products,
+        created_at: new Date(),
+        invoice_type
       };
       const result = await orderDb.createOrder(order);
       if (result.status === 'success') {
