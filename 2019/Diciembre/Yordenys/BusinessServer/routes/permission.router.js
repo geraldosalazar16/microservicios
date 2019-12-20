@@ -13,8 +13,7 @@ router.post('/list', [
             res.status(201).json({ errors: errors.array() });
         } else {
             const result = await list(req.body);
-            const status = result.status === 'success' ? 200 : 201;
-            res.status(status).json(result);
+            res.status(200).json(result);
         }
     }
 );

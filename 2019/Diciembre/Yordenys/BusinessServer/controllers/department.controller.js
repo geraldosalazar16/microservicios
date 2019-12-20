@@ -15,7 +15,7 @@ exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
             // Check exists_dep_name already exists
-            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
+            var businessTemp = (await business.find({ created_by: user_id, bid: bid }))[0];
             var exists_dep_name = businessTemp.departments.
             find((depart) => {
                 return depart.dep_name == dep_name;
@@ -35,10 +35,10 @@ exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
                 created_at: new Date().toString(),
                 created_by: user_id
             }));
-            var query = { user_id: user_id, bid: bid };
+            var query = { created_by: user_id, bid: bid };
             var valueUpdate = { $set: { departments: businessTemp.departments } };
 
-            if (await business.updateMany(query, valueUpdate).acknowledged) {
+            if ((await business.updateMany(query, valueUpdate)).ok) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
@@ -73,25 +73,26 @@ exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
 exports.edit = async({ user_id, bid, name, dep_id, decription }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
-            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0].
-            departments.
+            var businessTemp = (await business.find({ created_by: user_id, bid: bid }))[0]
+            businessTemp.departments.
             find((depart) => {
                 if (depart.dep_id == dep_id) {
                     depart.dep_name = name;
-                    depart.dep_desc = description;
+                    depart.dep_desc = decription;
                 }
                 return depart.dep_id == dep_id;
             });
-            var query = { user_id: user_id, bid: bid };
+            console.log(businessTemp)
+            var query = { created_by: user_id, bid: bid };
             var valueUpdate = { $set: { departments: businessTemp.departments } };
-            if (business.updateMany(query, valueUpdate).acknowledged) {
+            if ((await business.updateMany(query, valueUpdate)).ok) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
                     dep_id: dep_id,
                     bid: bid,
                     name: name,
-                    description: description
+                    description: decription
                 });
                 kafkaSend('business_department_updated', kafkaMessage);
                 return {
@@ -116,7 +117,7 @@ exports.edit = async({ user_id, bid, name, dep_id, decription }) => {
 exports.list = async({ user_id, bid, dep_id }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
-            return await business.find({ created_by: user_id, bid: bid })[0].departments;;
+            return (await business.find({ created_by: user_id, bid: bid }))[0].departments;;
         } else {
             return Array();
         }
@@ -130,16 +131,16 @@ exports.del = async function({ user_id, bid, dep_id }) {
         if (await Authorization.authorize({ user_id: user_id })) {
             var description = ""
             var name = ""
-            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0].
-            departments.
+            var businessTemp = (await business.find({ created_by: user_id, bid: bid }))[0]
+            businessTemp.departments = businessTemp.departments.
             filter((depart) => {
                 description = depart.description
                 name = depart.name
                 return depart.dep_id != dep_id;
             });
-            var query = { user_id: user_id, bid: bid };
+            var query = { created_by: user_id, bid: bid };
             var valueUpdate = { $set: { departments: businessTemp.departments } };
-            if (business.updateMany(query, valueUpdate).acknowledged) {
+            if ((await business.updateMany(query, valueUpdate)).ok) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,

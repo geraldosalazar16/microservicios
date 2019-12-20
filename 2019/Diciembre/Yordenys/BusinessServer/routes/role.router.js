@@ -74,7 +74,7 @@ router.post('/list', [
             res.status(201).json({ errors: errors.array() });
         } else {
             const result = await list(req.body);
-            res.status(status).json(result);
+            res.status(200).json(result);
         }
     }
 );
