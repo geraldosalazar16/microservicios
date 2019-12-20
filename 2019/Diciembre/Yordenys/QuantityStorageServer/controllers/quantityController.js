@@ -9,8 +9,10 @@ const table = 'quantities';
 
 exports.set = async ({ bid, reference, value }) => {
     try {
-        const quantity = await findQuantityByReference(reference);
-        if (quantity) {
+        // Search for quantity
+        const result = await findQuantity(reference);
+        const quantity = result.data;
+        if (result.status === 'success') {
             // Update value of Item to new value
             const ops = [
                 op.write('value', parseFloat(value))
@@ -23,7 +25,7 @@ exports.set = async ({ bid, reference, value }) => {
                 reference: reference.toString(),
                 value: parseFloat(value)
             };
-            await db.writeRecord(config.aerospike.namespace, table, uuidv4(), newQuantity);
+            await db.writeRecord(config.aerospike.namespace, table, reference, newQuantity);
         }
         // Store new change_history in change_histories table
         const change_history = {
@@ -52,8 +54,9 @@ exports.set = async ({ bid, reference, value }) => {
 exports.update = async ({ bid, reference, amount }) => {
     try {
         // Search for quantity
-        const quantity = await findQuantityByReference(reference);
-        if (quantity) {
+        const result = await findQuantity(reference);
+        const quantity = result.data;
+        if (result.status === 'success') {
             const newValue = quantity.bins.value + parseFloat(amount);
             // Update amount
             const ops = [
@@ -87,8 +90,9 @@ exports.update = async ({ bid, reference, amount }) => {
 }
 
 exports.get = async ({ bid, reference}) => {
-    const record = await findQuantityByReference(reference);
-    if (record) {
+    const result = await findQuantity(reference);
+    const record = result.data;
+    if (result.status === 'success') {
         return {
             status: 'success',
             message: 'Success',
@@ -110,8 +114,9 @@ exports.batchSet = async (quantities) => {
         const quantity = quantities[index];
         const {bid, reference, value} = quantity;
         try {
-            const record = await findQuantityByReference(reference);
-            if (record) {
+            const result = await findQuantity(reference);
+            const record = result.data;
+            if (result.status === 'success') {
                 // Update value of Item to new value
                 const ops = [
                     op.write('value', parseFloat(value))
@@ -165,8 +170,9 @@ exports.batchUpdate = async (quantities) => {
         const quantity = quantities[index];
         const {bid, reference, amount} = quantity;
         try {
-            const record = await findQuantityByReference(reference);
-            if (record) {
+            const result = await findQuantity(reference);
+            const record = result.data;
+            if (result.status === 'success') {
                 const newValue = record.bins.value + parseFloat(amount);
                 // Update amount
                 const ops = [
@@ -208,20 +214,8 @@ exports.batchUpdate = async (quantities) => {
     };
 }
 
-/**
- * Search a quantity by its reference
- * @param {String} reference 
- */
-async function findQuantityByReference(reference) {
-    // Check quantities table to make sure no other item with same reference exists
-    var scan = db.client.scan(config.aerospike.namespace, table);
-    scan.concurrent = true
-    scan.nobins = false
-    const stream = scan.foreach();
-    const filter = {
-        reference
-    };
-    const result = await db.fetchRecordsFromStream(stream, filter);
-    const quantity = result.data[0];
+const findQuantity = async (reference) => {
+    const key = new Aerospike.Key(config.aerospike.namespace, 'quantities', reference);
+    const quantity = await db.readRecord(key);
     return quantity;
 }
