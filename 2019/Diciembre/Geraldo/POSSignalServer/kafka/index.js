@@ -1,11 +1,12 @@
 const kafka = require('kafka-node');
 const topicHandlers = require('./topicHandlers');
 const config = require('../config.json');
-const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
+// const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
 
 exports.sendMessages = (topic, messages) => {
     return new Promise((resolve, reject) => {
         const Producer = kafka.Producer;
+        const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
         const producer = new Producer(client);
 
         let payloads = [
@@ -42,6 +43,7 @@ exports.sendMessages = (topic, messages) => {
 
 exports.listen = () => {
     Consumer = kafka.Consumer;
+    const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
     consumer = new Consumer(
         client,
         [

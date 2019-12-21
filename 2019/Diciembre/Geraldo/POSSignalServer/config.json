@@ -4,6 +4,6 @@
         "partition": 0
     },
     "mongodb": {
-        "connectionString": "mongodb+srv://microservice:microservice881016@cluster0-biqaq.mongodb.net/test?retryWrites=true&w=majority"
+        "connectionString": "mongodb://localhost:27017/test"
     }
 }
