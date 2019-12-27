@@ -65,13 +65,15 @@ exports.del = async({ user_id, bid }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
             var query = { "created_by": user_id, "bid": bid }
-            var temp_business = (await business.find(query))[0]
-            if ((await business.deleteMany(query))) {
+            var temp_business = (await business.find(query))[0];
+            
+            if (temp_business) {
+                await business.deleteMany(query)
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
                     bid: bid,
-                    decription: temp_business.decription,
+                    description: temp_business.description,
                     name: temp_business.name
                 });
                 kafkaSend('business_deleted', kafkaMessage);

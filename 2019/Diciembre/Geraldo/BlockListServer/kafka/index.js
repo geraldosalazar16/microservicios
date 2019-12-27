@@ -1,22 +1,18 @@
 const kafka = require('kafka-node');
-const config = require('./config/config.json');
+const config = require('../config.json');
 
-/**
- * @param {String} topic Kafka topic
- * @param {String} messages Message to send. It can be a single string, a KafkaMessage 
- * or an array of strings or KafkaMessage
- * @returns Promise with the result of sending the message
- */
-module.exports = (topic, messages) => {
+exports.sendMessages = (topic, messages) => {
     return new Promise((resolve, reject) => {
         const Producer = kafka.Producer;
-        const client = new kafka.KafkaClient({ kafkaHost: config.kafka_server });
+        const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
         const producer = new Producer(client);
 
-        let payloads = [{
-            topic: topic,
-            messages: messages
-        }];
+        let payloads = [
+            {
+                topic: topic,
+                messages: messages
+            }
+        ];
 
         producer.on('ready', () => {
             producer.send(payloads, (err, data) => {

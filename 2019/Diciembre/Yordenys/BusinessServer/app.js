@@ -12,9 +12,10 @@ var PermissionRouter = require('./routes/permission.router');
 
 var app = express();
 
+const config = require('./config/config.json');
 // base de datos
 //const business = require('../models/business');
-var mongoDB = 'mongodb://127.0.0.1/business';
+var mongoDB = config.cs_mongo;
 mongoose.connect(mongoDB, {
     useUnifiedTopology: true,
     useNewUrlParser: true,

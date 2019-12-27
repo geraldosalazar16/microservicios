@@ -14,18 +14,7 @@ const kafkaSend = require('../kafka');
 exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
-            // Check exists_dep_name already exists
-            var businessTemp = (await business.find({ created_by: user_id, bid: bid }))[0];
-            var exists_dep_name = businessTemp.departments.
-            find((depart) => {
-                return depart.dep_name == dep_name;
-            });
-            if (exists_dep_name) {
-                return {
-                    status: "Failed",
-                    message: "departments with same unique name already exists"
-                }
-            }
+            
             const dep_id = generateCode.getNextId();
             businessTemp.departments.push(new department({
                 dep_id,
@@ -60,6 +49,11 @@ exports.create = async({ user_id, bid, dep_name, dep_title, dep_desc, }) => {
                     status: "faild",
                     message: "Is update business faild"
                 }
+            }
+        } else {
+            return {
+                status: 'Failed',
+                message: 'Authorization failed'
             }
         }
     } catch (error) {
