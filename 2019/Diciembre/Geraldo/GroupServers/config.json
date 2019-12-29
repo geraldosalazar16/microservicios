@@ -1,0 +1,8 @@
+{
+    "kafka": {
+        "server": "127.0.0.1:9092"
+    },
+    "mongodb": {
+        "connectionString": "mongodb://daniel:yarianna@127.0.0.1:27017/test"
+    }
+}
