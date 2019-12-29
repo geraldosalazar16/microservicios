@@ -11,8 +11,10 @@ var whitelistRouter = require('./routes/whitelistRoute');
 var flowRouter = require('./routes/flowRoute');
 
 // Initial connection to database
+/*
 db.connect()
 .catch(error => console.log(error));
+*/
 
 var app = express();
 

@@ -11,7 +11,7 @@ const dateUtils = require('../utils/date');
  */
 exports.add = async ({chid, peer_id}) => {
     try {       
-        const insertQuery = `INSERT INTO white_peers (chid, peer_id) VALUES ("${chid}","${peer_id}")`;
+        const insertQuery = `INSERT INTO white_peers (chid, peer_id) VALUES ('${chid}','${peer_id}');`;
         const insertResult = await db.query(insertQuery);
         return {
             status: 'success'
@@ -34,7 +34,7 @@ exports.add = async ({chid, peer_id}) => {
  */
 exports.remove = async ({chid, peer_id}) => {
     try {       
-        const deleteQuery = `DELETE FROM white_peers WHERE chid = "${chid}" AND peer_id = "${peer_id}"`;
+        const deleteQuery = `DELETE FROM white_peers WHERE chid = '${chid}' AND peer_id = '${peer_id}'`;
         const deleteResult = await db.query(deleteQuery);
         return {
             status: 'success'
@@ -57,7 +57,7 @@ exports.remove = async ({chid, peer_id}) => {
  */
 exports.list = async ({chid}) => {
     try {       
-        const listQuery = `SELECT * FROM white_peers WHERE chid = "${chid}"`;
+        const listQuery = `SELECT * FROM white_peers WHERE chid = '${chid}'`;
         const list = await db.query(listQuery);
         return {
             status: 'success',
@@ -81,7 +81,7 @@ exports.list = async ({chid}) => {
  */
 exports.check = async ({chid, user_id}) => {
     try {       
-        const checkQuery = `SELECT 1 FROM white_peers WHERE chid = "${chid}" AND peer_id = "${user_id}"`;
+        const checkQuery = `SELECT 1 FROM white_peers WHERE chid = '${chid}' AND peer_id = '${user_id}'`;
         const checkResult = await db.query(checkQuery);
         if (checkResult.length > 0) {
             return {
