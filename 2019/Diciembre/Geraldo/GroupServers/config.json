@@ -3,6 +3,7 @@
         "server": "127.0.0.1:9092"
     },
     "mongodb": {
-        "connectionString": "mongodb://localhost:27017/test"
+        "url": "mongodb://localhost:27017",
+        "dbName": "test"
     }
 }

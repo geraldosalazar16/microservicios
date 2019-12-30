@@ -21,7 +21,7 @@ router.post(
         errors: errors.array()
       });
     } else{
-      const result = await group.create(req.body);
+      const result = await group.create(req.body, req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }
@@ -43,7 +43,7 @@ router.post(
         errors: errors.array()
       });
     } else{
-      const result = await group.delete(req.body);
+      const result = await group.delete(req.body,req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }
@@ -65,7 +65,7 @@ router.post(
         errors: errors.array()
       });
     } else{
-      const result = await group.list(req.body);
+      const result = await group.list(req.body,req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }
@@ -87,7 +87,7 @@ router.post(
         errors: errors.array()
       });
     } else{
-      const result = await group.join(req.body);
+      const result = await group.join(req.body,req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }
@@ -112,7 +112,7 @@ router.post(
         errors: errors.array()
       });
     } else{
-      const result = await group.updateRole(req.body);
+      const result = await group.updateRole(req.body,req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }
@@ -137,7 +137,7 @@ router.post(
         errors: errors.array()
       });
     } else{
-      const result = await group.editGroup(req.body);
+      const result = await group.editGroup(req.body,req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }

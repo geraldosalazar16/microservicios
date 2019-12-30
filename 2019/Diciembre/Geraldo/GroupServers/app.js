@@ -3,13 +3,16 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-const dbInit = require('./database');
-var groupRouter = require('./routes/groupRoute');
+const mongodb = require('./database');
+var groupRouter = require('./routes/groupRoute')
 
-
-dbInit();
+const config = require('./config.json');
+//mongodb.init(config.mongodb);
 
 var app = express();
+mongodb.init(config.mongodb)
+.then(db => app.db = db)
+.catch(err => console.log(err));
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -22,7 +25,6 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/group', groupRouter);
-
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
   next(createError(404));
