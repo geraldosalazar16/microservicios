@@ -22,7 +22,7 @@ router.post(
         errors: errors.array()
       });
     } else {
-      const result = await commandController.list(req.body);
+      const result = await commandController.list(req.body, req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }
@@ -50,6 +50,35 @@ router.post(
       });
     } else {
       const result = await commandController.isAllowed(req.body);
+      const status = result.status === 'success' ? 200 : 400;
+      res.status(status).json(result);
+    }
+  }
+);
+
+/**
+ * Requests command to be sent to device.
+ */
+router.post(
+  '/send',
+  [
+    body('user_id', `user_id cant't be undefined`).exists(),
+    body('bid', `bid cant't be undefined`).exists(),
+    body('code', `code cant't be undefined`).exists(),
+    body('args', `args cant't be undefined`).exists(),
+    body('dev_id', `dev_id cant't be undefined`).exists(),
+    body('dev_serial', `dev_serial cant't be undefined`).exists()
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(422).json({
+        status: 'failed',
+        message: 'Some parameters were invalid',
+        errors: errors.array()
+      });
+    } else {
+      const result = await commandController.send(req.body);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }

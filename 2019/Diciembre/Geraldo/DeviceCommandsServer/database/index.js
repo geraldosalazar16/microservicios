@@ -1,16 +1,21 @@
-const mongoose = require('mongoose');
-const config = require('../config.json');
+const MongoClient = require('mongodb').MongoClient;
 
-/**
- * Call this function to initialize database connection
- * We only have to call this once
- * All database operations willl be buffered till mongoose finish connecting
- */
-module.exports = () => {
-    mongoose.connect(config.mongodb.connectionString, {
-        useNewUrlParser: true,
-        useUnifiedTopology: true
+exports.init = async (config) => {
+    const client = new MongoClient(config.url, {
+        useUnifiedTopology: true,
+        useNewUrlParser: true
     });
-    mongoose.set('useCreateIndex', true);
-    const db = mongoose.connection;
+    return await connect(client, config.dbName);
+}
+
+const connect = (client, dbName) => {
+    return new Promise((resolve, reject) => {
+        client.connect((error) => {
+            if (error) {
+                reject(error);
+            }
+            const db = client.db(dbName);
+            resolve(db);
+        });
+    })
 }

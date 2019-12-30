@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+mongoose.set('useCreateIndex', true);
 const config = require('../config.json');
 
 
@@ -10,7 +11,8 @@ const config = require('../config.json');
 module.exports = () => {
     mongoose.connect(config.mongodb.connectionString, {
         useNewUrlParser: true,
-        useUnifiedTopology: true
+        useUnifiedTopology: true,
+        poolSize: 50
     });
     const db = mongoose.connection;
 }
