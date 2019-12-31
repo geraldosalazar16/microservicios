@@ -27,7 +27,7 @@ exports.add = async (data) => {
                     peer_id,
                     created_at: new Date()
                 });
-                await sendMessages('blocklist_added_to_whitelist', message);
+                // await sendMessages('blocklist_added_to_whitelist', message);
                 return success('Whitelist added');
             } else {
                 return failure(result.message);

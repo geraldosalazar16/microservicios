@@ -5,14 +5,14 @@
     "mysql": {
         "host": "localhost",
         "user": "root",
-        "password": "root",
+        "password": "",
         "database": "test"
     },
     "postgres": {
-        "user": "test",
+        "user": "root",
         "host": "localhost",
         "database": "test",
-        "password": "123456",
-        "port": 5432
+        "password": "",
+        "port": 3306
     }
 }

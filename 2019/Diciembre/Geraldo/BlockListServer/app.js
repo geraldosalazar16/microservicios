@@ -5,16 +5,14 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const db = require('./database');
 
-var policyRouter = require('./routes/policyRoute');
-var blacklistRouter = require('./routes/blacklistRoute');
+// var policyRouter = require('./routes/policyRoute');
+// var blacklistRouter = require('./routes/blacklistRoute');
 var whitelistRouter = require('./routes/whitelistRoute');
-var flowRouter = require('./routes/flowRoute');
+// var flowRouter = require('./routes/flowRoute');
 
 // Initial connection to database
-/*
 db.connect()
 .catch(error => console.log(error));
-*/
 
 var app = express();
 
@@ -28,10 +26,10 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/policy', policyRouter);
-app.use('/blacklist', blacklistRouter);
+// app.use('/policy', policyRouter);
+// app.use('/blacklist', blacklistRouter);
 app.use('/whitelist', whitelistRouter);
-app.use('/flow', flowRouter);
+// app.use('/flow', flowRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

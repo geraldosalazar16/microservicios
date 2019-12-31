@@ -3,6 +3,9 @@ var router = express.Router();
 whitelist = require('../controllers/whitelistController');
 const { body, validationResult, sanitizeBody } = require('express-validator');
 
+router.get('/add', (req, res) => {
+    res.send('OK');
+})
 /**
  * Add user to whitelist.
  */
