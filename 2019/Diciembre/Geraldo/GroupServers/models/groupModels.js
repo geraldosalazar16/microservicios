@@ -11,19 +11,11 @@ exports.createGroup = ({user_id, name, title, desc}, db) => {
                     message: err.message
                 });
             }
-            db.collection('members').insertOne({name, peer_id: user_id, role_id: "_owner"}, (err1,result1) => {
-                if(err1) {
-                    resolve({
-                        status: 'failed',
-                        message: err1.message
-                    });
-                }
-                resolve({
-                    status: 'success',
-                    message: 'Group Saved and Member Saved'
-                });
-            });
-            
+               
+            resolve({
+                status: 'success',
+                message: 'Group Saved successfully'
+            });    
         });
     });
 }

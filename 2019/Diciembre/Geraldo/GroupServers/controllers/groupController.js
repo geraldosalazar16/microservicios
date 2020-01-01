@@ -18,6 +18,7 @@ exports.create = async ({user_id, name, title, desc}, db) => {
             // Create new group
             const result = await groupDB.createGroup({user_id, name, title, desc}, db);
             if( result.status === 'success'){
+				const result1 = await memberDB.createMember({name, peer_id: user_id, role_id: "_owner"}, db);
                 // Push to Kafka
                 const message = JSON.stringify({
                 user_id,
