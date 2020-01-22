@@ -49,7 +49,7 @@ router.post(
         errors: errors.array()
       });
     } else {
-      const result = await commandController.isAllowed(req.body);
+      const result = await commandController.isAllowed(req.body, req.app.db);
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }

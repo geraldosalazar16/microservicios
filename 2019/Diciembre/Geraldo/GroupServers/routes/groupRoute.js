@@ -25,7 +25,6 @@ router.post(
       const status = result.status === 'success' ? 200 : 400;
       res.status(status).json(result);
     }
-    
 });
 /* POST delete group. */
 router.post(

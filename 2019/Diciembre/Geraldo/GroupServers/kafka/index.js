@@ -1,12 +1,12 @@
 const kafka = require('kafka-node');
 const config = require('../config.json');
+const Producer = kafka.Producer;
+
 
 exports.sendMessages = (topic, messages) => {
     return new Promise((resolve, reject) => {
-        const Producer = kafka.Producer;
         const client = new kafka.KafkaClient({ kafkaHost: config.kafka.server });
         const producer = new Producer(client);
-
         let payloads = [
             {
                 topic: topic,

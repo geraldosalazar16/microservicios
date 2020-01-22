@@ -5,6 +5,7 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const mongodb = require('./database');
 var commandRouter = require('./routes/commandRoute');
+var delegationRouter = require('./routes/delegetionRoute');
 
 const config = require('./config.json');
 mongodb.init(config.mongodb);
@@ -25,6 +26,7 @@ app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/command', commandRouter);
+app.use('/delegation', delegationRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {

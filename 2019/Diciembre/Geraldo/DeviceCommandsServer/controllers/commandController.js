@@ -3,7 +3,7 @@ const PosSignal = require('../libs/PosSignal');
 const commandsDb = require('../models/commandModel');
 const devCommandDb = require('../models/devCommandModel');
 const { success, failure } = require('../utils/response');
-const {sendMessage} = require('../kafka');
+const {sendMessages} = require('../kafka');
 
 /**
  * List all commands.
@@ -53,7 +53,7 @@ exports.isAllowed = async (data, db) => {
       const found = dev_command.devices.some(device => {
         return device.dev_type === dev_type
         && device.dev_usage === dev_usage
-        && device.dev_group_id === dev_group_id
+        && device.dev_group === dev_group_id
       });
       if (found) {
         return success('Device found');
@@ -88,7 +88,7 @@ exports.send = async (data, db) => {
     if (authorized.status === 'success') {
       await PosSignal.command(code, args);
       const message = JSON.stringify(data);
-      await sendMessage('command_send_requested', message);
+      await sendMessages('command_send_requested', message);
       return success('Command send requested');
     } else {
       return failure('Not authorized');
