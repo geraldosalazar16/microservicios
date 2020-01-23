@@ -1,0 +1,9 @@
+{
+    "kafka": {
+        "server": "127.0.0.1:9092"
+    },
+    "mongodb": {
+        "url": "mongodb://localhost:27017",
+        "dbName": "test"
+    }
+}

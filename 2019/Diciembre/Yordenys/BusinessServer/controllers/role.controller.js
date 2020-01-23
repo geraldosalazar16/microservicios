@@ -8,7 +8,7 @@ exports.create = async({ user_id, role_name, bid, role_title, role_desc, permiss
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
 
-            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
+            var businessTemp = (await business.find({ created_by: user_id, bid: bid }))[0]
             var exists_rol_name = businessTemp.roles.
             find((rol) => {
                 return rol.name == role_name;
@@ -36,16 +36,16 @@ exports.create = async({ user_id, role_name, bid, role_title, role_desc, permiss
 
             var valueUpdate = { $set: { roles: businessTemp.roles } };
 
-            if (await business.updateMany(query, valueUpdate).acknowledged) {
+            if ((await business.updateMany(query, valueUpdate)).ok) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
-                    role_id: dep_id,
+                    role_id: role_id,
                     role_name: role_name,
                     role_title: role_title,
                     role_desc: role_desc,
                     bid: bid,
-                    created_at: new Date(),
+                    created_at: new Date().toString(),
                     created_by: user_id
                 });
                 kafkaSend('business_role_created', kafkaMessage);
@@ -72,12 +72,12 @@ exports.create = async({ user_id, role_name, bid, role_title, role_desc, permiss
 exports.edit = async({ user_id, role_id, name, bid, decription, permissions }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
-            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
+            var businessTemp = (await business.find({ created_by: user_id, bid: bid }))[0];
             var exists_rol_name = businessTemp.roles.
             find((rol) => {
-                if (rol.role_id == dep_id) {
+                if (rol.role_id == role_id) {
                     rol.name = name;
-                    rol.desc = description;
+                    rol.desc = decription;
                     rol.permissions = permissions;
                 }
                 return rol.role_id == role_id;
@@ -90,21 +90,21 @@ exports.edit = async({ user_id, role_id, name, bid, decription, permissions }) =
             }
             var query = { created_by: user_id, bid: bid };
             var valueUpdate = { $set: { roles: businessTemp.roles } };
-            if (await business.updateMany(query, valueUpdate).acknowledged) {
+            if ((await business.updateMany(query, valueUpdate)).ok) {
                 // Publish event on Kafka
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
-                    role_id: dep_id,
+                    role_id: role_id,
                     bid: bid,
                     name: name,
                     description: decription
                 });
                 kafkaSend('business_role_created', kafkaMessage);
-                res.status(200).json({
+                return {
                     status: "success",
                     message: "Is update business successfull"
-                });
+                };
             } else {
                 return {
                     status: "faild",
@@ -123,10 +123,10 @@ exports.edit = async({ user_id, role_id, name, bid, decription, permissions }) =
 exports.del = async({ user_id, role_id, bid }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
-            var businessTemp = await business.find({ created_by: user_id, bid: bid })[0];
+            var businessTemp = (await business.find({ created_by: user_id, bid: bid }))[0];
             var description = ""
             var name = ""
-            var exists_rol_name = businessTemp.roles.
+            businessTemp.roles = businessTemp.roles.
             filter((rol) => {
                 if (rol.role_id == role_id) {
                     description = rol.role_desc
@@ -134,19 +134,13 @@ exports.del = async({ user_id, role_id, bid }) => {
                 }
                 return rol.role_id != role_id;
             });
-            if (!exists_rol_name) {
-                return {
-                    status: "Failed",
-                    message: "rol with same unique name already not exists"
-                }
-            }
             var query = { created_by: user_id, bid: bid };
             var valueUpdate = { $set: { roles: businessTemp.roles } };
-            if (await business.updateMany(query, valueUpdate).acknowledged) {
+            if ((await business.updateMany(query, valueUpdate)).ok) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
-                    role_id: dep_id,
+                    role_id: role_id,
                     bid: bid,
                     name: name,
                     description: description
@@ -174,7 +168,7 @@ exports.del = async({ user_id, role_id, bid }) => {
 exports.list = async function({ user_id, bid }) {
     try {
         if (await Authorization.authorize({ user_id: user_id }))
-            return business.find({ created_by: user_id, bid: bid })[0].roles;
+            return (await business.find({ created_by: user_id, bid: bid }))[0].roles;
         return Array()
     } catch (error) {
         return Array()

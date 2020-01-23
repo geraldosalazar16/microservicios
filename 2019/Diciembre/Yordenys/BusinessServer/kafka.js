@@ -1,5 +1,5 @@
 const kafka = require('kafka-node');
-const config = require('../BusinessServer/config/config');
+const config = require('./config/config.json');
 
 /**
  * @param {String} topic Kafka topic

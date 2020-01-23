@@ -1,0 +1,18 @@
+{
+    "kafka": {
+        "server": "127.0.0.1:9092"
+    },
+    "mysql": {
+        "host": "localhost",
+        "user": "root",
+        "password": "root",
+        "database": "test"
+    },
+    "postgres": {
+        "user": "root",
+        "host": "localhost",
+        "database": "test",
+        "password": "",
+        "port": 3306
+    }
+}

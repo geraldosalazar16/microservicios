@@ -5,13 +5,13 @@ const role = require('../models/role.model');
 
 exports.list = async({ role_id, bid }) => {
     try {
-        businessTemp = await business.find({ bid: bid });
+        businessTemp = (await business.find({ bid: bid }))[0];
         if (businessTemp) {
             resul = []
             await businessTemp.roles.find(rol => {
                 if (rol.role_id == role_id)
                     rol.permissions.forEach(perm => {
-                        resul.push(perm.perm_id)
+                        resul.push(eval(perm).perm_id)
                     })
                 return rol.role_id == role_id
             });
