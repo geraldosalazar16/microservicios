@@ -24,8 +24,9 @@ app.get('/random/next', (req, res) => {
 
     var idGenerator = generator.next()
 
-    var uuid = intformat(idGenerator, 'hex');
+    var uuid = intformat(idGenerator, 'dec');
 
+    const data = JSONStringuify()
     res.status(200).send(uuid);
   } else {
     res.status(403).send('Unauthorized');

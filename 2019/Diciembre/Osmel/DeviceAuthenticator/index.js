@@ -10,7 +10,7 @@ var deviceToken = require('./libs/DeviceTokenRepoLib/DeviceTokens');
  * Returns the server identity file.
  */
 app.post('/server/getIdentity', (req, res) => {
-    var user_id = require('./identity/server.id');
+    var user_id = fs.readFileSync('./identity/server.id');
     res.status(200).send(user_id);
 });
 
@@ -37,7 +37,7 @@ app.post('/devices/createSession', (req, res) => {
     var payload = req.body.payload;
 
     // Verify Identity
-    verifyIdentity = deviceIdentities.verify(data.dev_serial, data.dev_identity);
+    verifyIdentity = deviceIdentities.verify(dev_serial, dev_identity);
     if (verifyIdentity == 'failed') {
         res.status(403).send('Error');
     } else if (verifyIdentity == 'success') {
@@ -45,20 +45,15 @@ app.post('/devices/createSession', (req, res) => {
         const payload_buffer = Buffer.from(payload, 'base64');
 
         // RSA_Descrypt
-        const payload_json = crypto.privateDecrypt(privateKey, payload_buffer);
+        const payload_json = JSON.parse(crypto.privateDecrypt(privateKey, payload_buffer));
 
         const algorithm = 'aes-192-cbc';
 
-        //Generate skey (with payload_json)
-        const skey = crypto.scryptSync(payload_json, 'salt', 24);
-
-        // Initialization vector (generate with payload_json)
-        const iv = Buffer.alloc(16, payload_json);
-
-        // console.log('test', test_descriptAes);
+        var skey = payload_json.skey;
+        var iv = payload_json.iv;
 
         // AES_Descrypt
-        var device_nonce = decryptAes(nonce, skey, iv, algorithm);
+        var device_nonce = decryptAes(payload_json.nonce, skey, iv, algorithm);
 
         var return_nonce = device_nonce + 10;
 
@@ -101,9 +96,9 @@ app.post('/devices/authenticate', (req, res) => {
     var algorithm = 'aes-192-cbc';
 
     // AES_Descrypt
-    const payload_json = decryptAes(payload, session.skey, session.iv, algorithm);
+    const payload_json = JSON.parse(decryptAes(payload, session.skey, session.iv, algorithm));
 
-    var session_nonce = payload_json - 10;
+    var session_nonce = payload_json.nonce - 10;
 
     if (session_nonce != session.nonce) {
         res.status(403).send('Not Allowed');
@@ -155,6 +150,23 @@ function decryptAes(toDecrypt, skey, iv, algorithm) {
     return dec;
 }
 
+const port = normalizePort(process.env.PORT || '8001');
 http.createServer(app).listen(8021, () => {
-    console.log('Server started at http://localhost:8001');
+  console.log(`Server started at http://localhost:${port}`);
 });
+
+function normalizePort(val) {
+  var port = parseInt(val, 10);
+
+  if (isNaN(port)) {
+    // named pipe
+    return val;
+  }
+
+  if (port >= 0) {
+    // port number
+    return port;
+  }
+
+  return false;
+}

@@ -1,0 +1,58 @@
+[
+	{
+		id:"ecomm",
+		title:"E-Commerce",
+		desc:"E-Commerces like amazon, ebay, etc.",
+		sub_types:[
+			{
+				id:"amazon",
+				title:"Amazon",
+				desc:"Amazon connector"
+			},
+			{
+				id:"ebay",
+				title:"Ebay",
+				desc:"Ebay connector"
+			}
+		]
+	},
+	{
+		id:"phys",
+		title:"Physical Store",
+		desc:"A physical store in real world, like department stores, shops, etc.",
+		sub_types:[
+			{
+				id:"grocarry",
+				title:"Grocarry",
+				desc:"Grocarry"
+			},
+			{
+				id:"departstore",
+				title:"Department Store",
+				desc:"Department Store"
+			}
+		]
+	},
+	{
+		id:"social",
+		title:"Social Network",
+		desc:"A social network account.",
+		sub_types:[
+			{
+				id:"instagram",
+				title:"Instagram",
+				desc:"Instagram Account"
+			},
+			{
+				id:"facebook",
+				title:"Facebook Account",
+				desc:"Facebook Account"
+			},
+			{
+				id:"whatsapp",
+				title:"WhatsApp Group",
+				desc:"Business public group in WhatsApp"
+			}
+		]
+	}
+]

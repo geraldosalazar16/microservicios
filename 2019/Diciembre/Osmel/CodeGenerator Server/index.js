@@ -3,6 +3,9 @@ var http = require('http');
 var app = express();
 var config = require('./config.json');
 var crypto = require('crypto');
+var body_parser = require('body-parser');
+
+app.use(body_parser.urlencoded({ extended: true }));
 
 /**
  * Endpoint for Generates next unique code
@@ -10,10 +13,10 @@ var crypto = require('crypto');
  * @param {string} masterSecret
  * @param {string} base_string
  */
-app.get('/code/next', (req, res) => {
-    var masterSecret = req.query.masterSecret;
-    var masterId = req.query.masterId;
-    var base_string = req.query.base_string;
+app.post('/code/next', (req, res) => {
+    var masterSecret = req.body.masterSecret;
+    var masterId = req.body.masterId;
+    var base_string = req.body.base_string;
 
     var hashedMasterSecret = crypto.createHash('sha256')
         .update(masterSecret)
@@ -34,7 +37,7 @@ app.get('/code/next', (req, res) => {
 })
 
 const port = normalizePort(process.env.PORT || '8001');
-http.createServer(app).listen(8022, () => {
+http.createServer(app).listen(8021, () => {
   console.log(`Server started at http://localhost:${port}`);
 });
 

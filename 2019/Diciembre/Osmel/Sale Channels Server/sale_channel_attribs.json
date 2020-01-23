@@ -1,0 +1,44 @@
+[
+	{
+		id:"normal",
+		title:"Normal Account",
+		desc:"Normal Instagram Account",
+		related_type:"social",
+		related_sub_type:"instagram",
+	},
+	{
+		id:"business",
+		title:"Business Account",
+		desc:"Instagram Business Account",
+		related_type:"social",
+		related_sub_type:"instagram",
+	},
+	{
+		id:"pub_chan",
+		title:"Public Channel",
+		desc:"Telegram Public Channel",
+		related_type:"social",
+		related_sub_type:"telegram",
+	},
+	{
+		id:"private",
+		title:"Private Access",
+		desc:"Channel or Group is private",
+		related_type:"social",
+		related_sub_type:"telegram",
+	},
+	{
+		id:"normal",
+		title:"Normal Account",
+		desc:"Normal Telegram Account",
+		related_type:"social",
+		related_sub_type:"telegram",
+	},
+	{
+		id:"normal",
+		title:"Normal Account",
+		desc:"Normal Instagram Account",
+		related_type:"social",
+		related_sub_type:"insta",
+	},
+]

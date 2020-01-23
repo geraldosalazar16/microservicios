@@ -1,0 +1,38 @@
+{
+    "user_id": "prueba",
+    "bid": "testBid",
+    "dep_id": "dep893",
+    "catalog_info": {
+        "gid": "qqq",
+        "bid": "rrr",
+        "dep_id": "ppp",
+        "pid": "iiii",
+        "title": "oiuyy",
+        "desc": "p09ub",
+        "barcode": "jbgfh",
+        "image": [
+            "hdfbef",
+            "hjdb",
+            "hdhds"
+        ],
+        "production_date": "2019-12-25T04:10:24.678Z",
+        "expiry_date": "2019-12-25T04:10:20.678Z",
+        "created_by": "kndf",
+        "category": "knrf",
+        "tags": [
+            "err",
+            "dsss",
+            "dfcss"
+        ],
+        "tax_rule": "bcdjcd",
+        "manufacturer": "hbjdc",
+        "supplier": "hbdc",
+        "active": true,
+        "on_sale": false,
+        "width": 125,
+        "height": 745,
+        "depthL": 43,
+        "weight": 836,
+        "measurement_unit": "hbdjf",
+    }
+}
