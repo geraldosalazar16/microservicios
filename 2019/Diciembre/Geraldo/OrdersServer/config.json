@@ -3,6 +3,6 @@
         "server": "127.0.0.1:9092"
     },
     "mongodb": {
-        "connectionString": "mongodb://localhost:27017/test"
+        "connectionString": "mongodb+srv://microservice:microservice881016@cluster0-biqaq.mongodb.net/test?retryWrites=true&w=majority"
     }
 }

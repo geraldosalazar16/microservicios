@@ -7,7 +7,7 @@ router.post('/create', [
         body('user_id', `user_id cant't be undefined`).exists(),
         body('unique_name', `unique_name cant't be undefined`).exists(),
         body('name', `name cant't be undefined`).exists(),
-        body('description', `decription cant't be undefined`).exists(),
+        body('decription', `decription cant't be undefined`).exists(),
         check('unique_name').isLength({ min: 6 }).withMessage("unique_name must be greater than 6")
     ],
     async(req, res) => {
@@ -26,7 +26,7 @@ router.post('/edit', [
     body('user_id', `user_id cant't be undefined`).exists(),
     body('bid', `bid cant't be undefined`).exists(),
     body('name', `name cant't be undefined`).exists(),
-    body('description', `description cant't be undefined`).exists(),
+    body('decription', `decription cant't be undefined`).exists(),
     check('name').isLength({ min: 6 }).withMessage("name must be greater than 6")
 ], async(req, res) => {
     const errors = validationResult(req);

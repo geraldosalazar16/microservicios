@@ -59,4 +59,30 @@ router.post(
   }
 );
 
+/**
+ * List orders of the business.
+ */
+router.post(
+  '/listByChannel',
+  [
+    body('user_id', `user_id cant't be undefined`).exists(),
+    body('bid', `bid cant't be undefined`).exists(),
+    body('chid', `chid cant't be undefined`).exists()
+  ], 
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      res.status(422).json({
+        status: 'failed',
+        message: 'Some parameters were invalid',
+        errors: errors.array()
+      });
+    } else {
+      const result = await direct.sub(req.body);
+      const status = result.status === 'success' ? 200 : 400;
+      res.status(status).json(result);
+    }
+  }
+);
+
 module.exports = router;

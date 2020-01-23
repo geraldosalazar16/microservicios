@@ -52,6 +52,43 @@ exports.writeRecord = async (namespace, set, key, bins) => {
 }
 
 /**
+ * Scan a stream to return the records
+ * @param {Object} stream 
+ * @param {Array} filter An array of fields to include
+ * @returns {Object} Records and errors
+ */
+exports.fetchRecordsFromStream = (stream, filter = []) => {
+    return new Promise((resolve, reject) => {
+        // Store the records
+        const records = [];
+        // Store errors
+        const errors = [];
+        stream.on('data', function (record) {
+            // If received a filter option, only show included fields
+            if (filter) {
+                let equal = true;
+                Object.keys(filter).forEach(field => {
+                    if (record.bins[field] !== filter[field]) {
+                        equal = false;
+                    }
+                });
+                if (equal) {
+                    records.push(record);
+                }
+            } else {
+                records.push(record);
+            }
+        })
+        stream.on('error', function (error) {
+            errors.push(`Error while scanning: ${error.message} [${error.code}]`);
+        });
+        stream.on('end', function () {
+            resolve(success('Records fetched ', records, errors));
+        });
+    });
+}
+
+/**
  * Deletes a record form the database
  * @param {String} key 
  */

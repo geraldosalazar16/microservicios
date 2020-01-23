@@ -3,6 +3,7 @@ const department = require('../models/department.model');
 const role = require('../models/role.model');
 const Schema = mongoose.Schema;
 
+
 /**
  *  bid: String, unique, main query key
 -	created_at: Datetime
@@ -13,11 +14,12 @@ const Schema = mongoose.Schema;
 -	description: String
 -	departments: <List of Department documents>
 -	roles: <List of Role documents>
+
  */
 let business = new Schema({
     bid: { type: String, unique: true },
     created_at: { type: Date },
-    created_by: { type: String, },
+    created_by: { type: String, unique: true },
     unique_name: { type: String },
     unique_code: { type: String, unique: true },
     name: { type: String },

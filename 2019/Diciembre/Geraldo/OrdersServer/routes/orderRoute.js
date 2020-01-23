@@ -57,7 +57,7 @@ router.post(
 );
 
 /**
- * List orders of the business and sale channel.
+ * List orders of the business.
  */
 router.post(
   '/listByChannel',

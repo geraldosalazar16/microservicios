@@ -1,4 +1,5 @@
 const kafka = require('kafka-node');
+const bp = require('body-parser');
 const config = require('../config.json');
 
 exports.sendMessages = (topic, messages) => {

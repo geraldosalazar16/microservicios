@@ -34,17 +34,16 @@ exports.create = async({ user_id, unique_name, name, decription }) => {
                 user_id: user_id,
                 unique_name: unique_name,
                 name: name,
-                description: decription,
+                description: description,
                 bid,
                 unique_code,
-                created_at: new Date().toString(),
+                created_at: new Date(),
                 created_by: user_id
             })
             kafkaSend('business_created', kafkaMessage);
             //return unique_code;
             return {
                 status: "success",
-                message: "business is  insert successfull",
                 unique_code
             }
         }
@@ -64,16 +63,14 @@ exports.create = async({ user_id, unique_name, name, decription }) => {
 exports.del = async({ user_id, bid }) => {
     try {
         if (await Authorization.authorize({ user_id: user_id })) {
-            var query = { "created_by": user_id, "bid": bid }
-            var temp_business = (await business.find(query))[0];
-            
-            if (temp_business) {
-                await business.deleteMany(query)
+            var query = { created_by: user_id, bid: bid };
+            temp_business = business.find({ created_by: user_id, bid: bid })[0]
+            if (await business.deleteMany(query)) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
                     bid: bid,
-                    description: temp_business.description,
+                    decription: temp_business.decription,
                     name: temp_business.name
                 });
                 kafkaSend('business_deleted', kafkaMessage);
@@ -96,17 +93,17 @@ exports.del = async({ user_id, bid }) => {
     }
 }
 
-exports.edit = async({ user_id, bid, name, decription }) => {
+exports.edit = async({ user_id, bid, name, description }) => {
     try {
-        if (await Authorization.authorize({ user_id: user_id, bid })) {
-            var query = { "created_by": user_id, "bid": bid }
-            var valueUpdate = { $set: { "name": name, "description": decription } };
-            if ((await business.updateMany(query, valueUpdate)).ok) {
+        if (await Authorization.authorize({ user_id: user_id })) {
+            var query = { created_by: user_id, bid: bid };
+            var valueUpdate = { $set: { name: name, description: description } };
+            if (await business.updateMany(query, valueUpdate).acknowledged) {
                 // Publish event on Kafka
                 const kafkaMessage = JSON.stringify({
                     user_id: user_id,
                     name: name,
-                    description: decription,
+                    description: description,
                     bid: bid
                 });
                 kafkaSend('business_updated', kafkaMessage);

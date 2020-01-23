@@ -40,7 +40,7 @@ exports.sub = async (data) => {
       if (result.status === 'success') {
         // Publish event on Kafka
         const message = Object.assign({}, data, {created_at: new Date()});
-        const mesR = await sendMessages('signal_core_sub_permitted', message)
+        await sendMessages('signal_core_sub_permitted', message)
         return success('Member added');
       } else {
         return failure(result.error);
