@@ -1,0 +1,27 @@
+{
+    "name": "samir",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "node ./bin/www",
+        "serve": "nodemon ./bin/www"
+    },
+    "dependencies": {
+        "cookie-parser": "~1.4.4",
+        "crypto": "^1.0.1",
+        "debug": "~2.6.9",
+        "express": "~4.16.1",
+        "express-validator": "^6.3.0",
+        "fs": "0.0.1-security",
+        "http-errors": "^1.7.3",
+        "js-code-generator": "^1.0.1",
+        "kafka-node": "^5.0.0",
+        "mongoose": "^5.8.0",
+        "morgan": "~1.9.1",
+        "mysql": "^2.18.0",
+        "pug": "2.0.0-beta11"
+    },
+    "devDependencies": {
+        "nodemon": "^2.0.2"
+    }
+}
